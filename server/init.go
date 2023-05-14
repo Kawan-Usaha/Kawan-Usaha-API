@@ -2,20 +2,15 @@ package server
 
 import (
 	"kawan-usaha-api/db"
-	"log"
+	"kawan-usaha-api/server/lib"
+	"kawan-usaha-api/server/router"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 func SetupRouter() *gin.Engine {
-
-	// Load .env file
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Fatal(err.Error())
-	}
 
 	// DB
 	db := Database.Open()
@@ -52,10 +47,8 @@ func SetupRouter() *gin.Engine {
 	//Routers
 
 	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Welcome to Kawan Usaha API!",
-			"success": true,
-		})
+		c.JSON(http.StatusOK, lib.Ok("Welcome to Kawan Usaha API!", nil))
 	})
+	router.User(db, r)
 	return r
 }
