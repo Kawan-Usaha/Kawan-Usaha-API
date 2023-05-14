@@ -1,13 +1,28 @@
 package server
 
 import (
+	"kawan-usaha-api/db"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func SetupRouter() *gin.Engine {
+
+	// Load .env file
+	if err := godotenv.Load("../.env"); err != nil {
+		log.Fatal(err.Error())
+	}
+
+	// DB
+	db := Database.Open()
+	if db != nil {
+		println("Nice, DB Connected")
+	}
+
 	// Gin Framework
 	gin.SetMode(os.Getenv("GIN_MODE"))
 	r := gin.Default()
