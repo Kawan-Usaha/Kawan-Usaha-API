@@ -20,9 +20,6 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.20
-    
-    - name: Get
-      run: go get
 
     - name: Make .env
       run: printf "GIN_MODE=debug\nPROXY_1=localhost\n" > .env
