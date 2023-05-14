@@ -9,6 +9,6 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    target-branch: "development"
+    target-branch: "staging"
     open-pull-requests-limit: 2
     
