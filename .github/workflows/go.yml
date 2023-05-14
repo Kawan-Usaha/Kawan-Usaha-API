@@ -5,9 +5,9 @@ name: Go
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "development" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "development" ]
 
 jobs:
 
@@ -25,7 +25,7 @@ jobs:
       run: printf "GIN_MODE=debug\nPROXY_1=localhost\n" > .env
       
     - name: export $GOPATH
-      run: export $GOPATH=~/go
+      run: export $GOPATH=/go
       
     - name: Build
       run: go build -v ./...
