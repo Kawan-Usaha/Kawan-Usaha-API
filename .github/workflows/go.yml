@@ -24,11 +24,11 @@ jobs:
     - name: Make .env
       run: printf "GIN_MODE=debug\nPROXY_1=localhost\n" > .env
       
-    - name: export $GOPATH
-      run: export GOPATH=/go
+    - name: go get dependencies
+      run: GOPATH=~/go go get
       
     - name: Build
-      run: go build -v ./...
+      run: GOPATH=~/go go build -v ./...
 
     - name: Test
-      run: go test -v ./...
+      run: GOPATH=~/go go test -v ./...
