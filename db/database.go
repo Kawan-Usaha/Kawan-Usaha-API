@@ -2,7 +2,7 @@ package Database
 
 import (
 	"fmt"
-	"kawan-usaha-api/model"
+	Model "kawan-usaha-api/model"
 	"log"
 	"os"
 
