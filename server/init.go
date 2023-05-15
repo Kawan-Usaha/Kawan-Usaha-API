@@ -44,6 +44,14 @@ func SetupRouter() *gin.Engine {
 		}
 	})
 
+	// Config
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, lib.Error("API Not Found", nil))
+	})
+
+	r.RemoveExtraSlash = true
+	r.RedirectTrailingSlash = true
+
 	//Routers
 
 	r.GET("/", func(c *gin.Context) {
