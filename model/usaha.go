@@ -9,6 +9,7 @@ type Usaha struct {
 	UsahaName string    `gorm:"notNull;size:255" json:"usahaname"`
 	UsahaId   string    `gorm:"size:255;notNull;primaryKey" json:"usaha_id"`
 	Type      string    `gorm:"notNull;size:255" json:"type"`
+	Tags      []string  `gorm:"type:text;null" json:"tags"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
