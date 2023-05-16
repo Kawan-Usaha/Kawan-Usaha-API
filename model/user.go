@@ -11,8 +11,9 @@ type User struct {
 	Username  string    `gorm:"size:255;notNull;uniqueIndex" json:"username"`
 	Email     string    `gorm:"size:255;notNull;uniqueIndex" json:"email"`
 	Password  string    `gorm:"notNull;size:255" json:"password"`
-	UsahaID   uint      `gorm:"notNull" json:"usaha_id"`
-	Usaha     Usaha     `gorm:"foreignKey:UsahaId" json:"usaha" constraint:OnUpdate:CASCADE,OnDelete:CASCADE;`
+	UsahaId   []string  `gorm:"type:text;null" json:"usaha_id"`
+	Usaha     []Usaha   `gorm:"ForeignKey:UsahaId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Verified  bool      `gorm:"notNull;default:false" json:"verified"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
