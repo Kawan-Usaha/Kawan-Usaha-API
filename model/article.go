@@ -6,6 +6,7 @@ import (
 
 type Article struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
+	UserId      string    `gorm:"notNull;size:255" json:"user_id"`
 	Title       string    `gorm:"notNull;size:255" json:"title"`
 	Content     string    `gorm:"type:text;null" json:"content"`
 	Image       string    `gorm:"null;size:255" json:"image"`

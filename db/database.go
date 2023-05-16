@@ -43,7 +43,8 @@ func Open() *gorm.DB {
 		&Model.Category{},
 		&Model.Chat{},
 		&Model.Message{},
-		&Model.TempCode{}); err != nil {
+		&Model.TempCode{},
+		&Model.Tag{}); err != nil {
 
 		log.Fatal(err.Error())
 	}
