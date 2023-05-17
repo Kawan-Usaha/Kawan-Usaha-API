@@ -2,12 +2,14 @@ package lib
 
 import (
 	"fmt"
+	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 )
 
-func GenerateToken(ttl time.Duration, payload interface{}, secretJWTKey string) (string, error) {
+func GenerateToken(ttl time.Duration, payload interface{}) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS512)
 
 	now := time.Now().UTC()
@@ -18,7 +20,7 @@ func GenerateToken(ttl time.Duration, payload interface{}, secretJWTKey string) 
 	claims["iat"] = now.Unix()
 	claims["nbf"] = now.Unix()
 
-	tokenString, err := token.SignedString([]byte(secretJWTKey))
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 
 	if err != nil {
 		return "", fmt.Errorf("generating JWT Token failed: %w", err)
@@ -27,22 +29,26 @@ func GenerateToken(ttl time.Duration, payload interface{}, secretJWTKey string) 
 	return tokenString, nil
 }
 
-func ValidateToken(token string, signedJWTKey string) (string, error) {
-	tok, err := jwt.Parse(token, func(jwtToken *jwt.Token) (interface{}, error) {
-		if _, ok := jwtToken.Method.(*jwt.SigningMethodHMAC); !ok {
-			return "", fmt.Errorf("unexpected method: %s", jwtToken.Header["alg"])
+func ValidateToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		header := c.Request.Header.Get("Authorization")
+		header = header[len("Bearer "):]
+		token, err := jwt.Parse(header, func(t *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("TOKEN_SECRET")), nil
+		})
+		if err != nil {
+			c.JSON(500, ErrorResponse("JWT invalid.", err.Error()))
+			c.Abort()
+			return
 		}
-
-		return []byte(signedJWTKey), nil
-	})
-	if err != nil {
-		return "", fmt.Errorf("invalidate token: %w", err)
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			c.Set("id", claims["id"])
+			c.Next()
+			return
+		} else {
+			c.JSON(403, ErrorResponse("JWT invalid.", err.Error()))
+			c.Abort()
+			return
+		}
 	}
-
-	claims, ok := tok.Claims.(jwt.MapClaims)
-	if !ok || !tok.Valid {
-		return "", fmt.Errorf("invalid token claim")
-	}
-
-	return claims["sub"].(string), nil
 }
