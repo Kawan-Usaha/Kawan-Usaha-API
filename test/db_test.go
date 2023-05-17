@@ -16,6 +16,16 @@ func TestDb(t *testing.T) {
 	db := Database.Open()
 	assert.NotNil(t, db)
 
+	//remove existing data
+	db.Exec("DELETE FROM temp_codes")
+	db.Exec("DELETE FROM messages")
+	db.Exec("DELETE FROM chats")
+	db.Exec("DELETE FROM tags")
+	db.Exec("DELETE FROM categories")
+	db.Exec("DELETE FROM articles")
+	db.Exec("DELETE FROM usahas")
+	db.Exec("DELETE FROM users")
+
 	// Test User
 	newUser := Model.User{
 		UserId:    "1234567890",
@@ -78,8 +88,8 @@ func TestDb(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	if err := db.Create(&newCategory); err.Error != nil {
-		log.Fatal(err.Error.Error())
+	if err := db.Model(&newArticle).Association("Category").Append(&newCategory); err != nil {
+		log.Fatal(err.Error())
 	}
 	searchCategory := Model.Category{}
 	if err := db.Where("title = ?", "HelloTitle").First(&searchCategory).Error; err != nil {
