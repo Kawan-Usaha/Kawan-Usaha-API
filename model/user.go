@@ -8,7 +8,6 @@ type User struct {
 	ID        uint      `gorm:"notNull" json:"id"`
 	UserId    string    `gorm:"notNull;size:255,primaryKey" json:"user_id"`
 	Name      string    `gorm:"notNull;size:255" json:"name"`
-	Username  string    `gorm:"size:255;notNull;uniqueIndex" json:"username"`
 	Email     string    `gorm:"size:255;notNull;uniqueIndex" json:"email"`
 	Password  string    `gorm:"notNull;size:255" json:"password"`
 	Usaha     []Usaha   `gorm:"foreignkey:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE,OnDelete:SET NULL;"`
