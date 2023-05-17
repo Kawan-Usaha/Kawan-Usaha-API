@@ -1,7 +1,7 @@
 package server
 
 import (
-	"kawan-usaha-api/db"
+	Database "kawan-usaha-api/db"
 	"kawan-usaha-api/server/lib"
 	"kawan-usaha-api/server/router"
 	"net/http"
@@ -46,7 +46,7 @@ func SetupRouter() *gin.Engine {
 
 	// Config
 	r.NoRoute(func(c *gin.Context) {
-		c.JSON(404, lib.Error("API Not Found", nil))
+		c.JSON(404, lib.ErrorResponse("API Not Found", nil))
 	})
 
 	r.RemoveExtraSlash = true
@@ -55,8 +55,9 @@ func SetupRouter() *gin.Engine {
 	//Routers
 
 	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, lib.Ok("Welcome to Kawan Usaha API!", nil))
+		c.JSON(http.StatusOK, lib.OkResponse("Welcome to Kawan Usaha API!", nil))
 	})
 	router.User(db, r)
+	router.Auth(db, r)
 	return r
 }

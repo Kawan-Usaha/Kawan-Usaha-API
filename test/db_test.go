@@ -30,7 +30,6 @@ func TestDb(t *testing.T) {
 	newUser := Model.User{
 		UserId:    "1234567890",
 		Name:      "Hello",
-		Username:  "hello",
 		Email:     "hello@gmail.com",
 		Password:  "12345678",
 		Verified:  false,
