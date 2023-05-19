@@ -8,7 +8,12 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute v1.19.3 // indirect
+	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/thanhpk/randstr v1.0.5 // indirect
+	golang.org/x/oauth2 v0.8.0 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 )
 

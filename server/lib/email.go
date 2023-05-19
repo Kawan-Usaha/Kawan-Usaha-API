@@ -19,8 +19,9 @@ type EmailData struct {
 }
 
 var Templates = map[string]string{
-	"verify":    "verificationCode.html",
-	"promotion": "promotion.txt",
+	"email_verification":   "verificationCode.html",
+	"email_promotion":      "promotion.txt",
+	"email_reset_password": "resetPassword.html",
 }
 
 func SendMailSingleReceiver(receiver string, data *EmailData, templateName string) {
@@ -30,7 +31,7 @@ func SendMailSingleReceiver(receiver string, data *EmailData, templateName strin
 		var body bytes.Buffer
 		template, err := ParseTemplateDir("templates")
 		if err != nil {
-			log.Fatal("Could not parse template", err)
+			log.Panic("Could not parse template", err)
 		}
 
 		template.ExecuteTemplate(&body, templateName, &data)
@@ -49,7 +50,7 @@ func SendMailSingleReceiver(receiver string, data *EmailData, templateName strin
 		errsend := smtp.SendMail(os.Getenv("EMAIL_HOST")+":"+os.Getenv("EMAIL_PORT"), auth, os.Getenv("EMAIL_USER"), []string{receiver}, msg)
 
 		if errsend != nil {
-			log.Fatal(err)
+			log.Panic(err)
 		}
 	}()
 }
@@ -60,7 +61,7 @@ func SendMailMultipleReceiver(receivers []string, data *EmailData, templateName 
 	var body bytes.Buffer
 	template, err := ParseTemplateDir("templates")
 	if err != nil {
-		log.Fatal("Could not parse template", err)
+		log.Panic("Could not parse template", err)
 	}
 
 	template.ExecuteTemplate(&body, templateName, &data)
@@ -79,7 +80,7 @@ func SendMailMultipleReceiver(receivers []string, data *EmailData, templateName 
 	errsend := smtp.SendMail(os.Getenv("EMAIL_HOST")+":"+os.Getenv("EMAIL_PORT"), auth, os.Getenv("EMAIL_USER"), receivers, msg)
 
 	if errsend != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
 
