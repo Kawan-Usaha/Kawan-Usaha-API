@@ -28,9 +28,8 @@ func TestDb(t *testing.T) {
 
 	// Test User
 	newUser := Model.User{
-		UserId:    "1234567890",
+		UserId:    "59d729af-f5a6-4e6c-9eac-027ed3fc11e0",
 		Name:      "Hello",
-		Username:  "hello",
 		Email:     "hello@gmail.com",
 		Password:  "12345678",
 		Verified:  false,
@@ -41,10 +40,10 @@ func TestDb(t *testing.T) {
 		log.Fatal(err.Error.Error())
 	}
 	searchUser := Model.User{}
-	if err := db.Where("user_id = ?", "1234567890").First(&searchUser).Error; err != nil {
+	if err := db.Where("user_id = ?", "59d729af-f5a6-4e6c-9eac-027ed3fc11e0").First(&searchUser).Error; err != nil {
 		log.Fatal(err.Error())
 	}
-	assert.Equal(t, "1234567890", searchUser.UserId)
+	assert.Equal(t, "59d729af-f5a6-4e6c-9eac-027ed3fc11e0", searchUser.UserId)
 
 	// Test Usaha
 	newUsaha := Model.Usaha{
@@ -57,10 +56,26 @@ func TestDb(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 	searchUsaha := Model.Usaha{}
-	if err := db.Where("id = ?", 1).First(&searchUsaha).Error; err != nil {
+	if err := db.Where("id = ?", uint(1)).First(&searchUsaha).Error; err != nil {
 		log.Fatal(err.Error())
 	}
 	assert.Equal(t, uint(1), searchUsaha.ID)
+
+	// Test Category
+	newCategory := Model.Category{
+		Title:     "HelloTitle",
+		Image:     "HelloImage",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := db.Create(&newCategory); err.Error != nil {
+		log.Fatal(err.Error.Error())
+	}
+	searchCategory := Model.Category{}
+	if err := db.Where("title = ?", "HelloTitle").First(&searchCategory).Error; err != nil {
+		log.Fatal(err.Error())
+	}
+	assert.Equal(t, "HelloTitle", searchCategory.Title)
 
 	// Test Article
 	newArticle := Model.Article{
@@ -72,30 +87,17 @@ func TestDb(t *testing.T) {
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-	if err := db.Create(&newArticle); err.Error != nil {
-		log.Fatal(err.Error.Error())
+	if err := db.Model(&newUser).Association("Article").Append(&newArticle); err != nil {
+		log.Fatal(err.Error())
+	}
+	if err := db.Model(&newCategory).Association("Articles").Append(&newArticle); err != nil {
+		log.Fatal(err.Error())
 	}
 	searchArticle := Model.Article{}
 	if err := db.Where("title = ?", "HelloTitle").First(&searchArticle).Error; err != nil {
 		log.Fatal(err.Error())
 	}
 	assert.Equal(t, "HelloTitle", searchArticle.Title)
-
-	// Test Category
-	newCategory := Model.Category{
-		Title:     "HelloTitle",
-		Image:     "HelloImage",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-	if err := db.Model(&newArticle).Association("Category").Append(&newCategory); err != nil {
-		log.Fatal(err.Error())
-	}
-	searchCategory := Model.Category{}
-	if err := db.Where("title = ?", "HelloTitle").First(&searchCategory).Error; err != nil {
-		log.Fatal(err.Error())
-	}
-	assert.Equal(t, "HelloTitle", searchCategory.Title)
 
 	// Test Tag
 	newTag := Model.Tag{
@@ -136,8 +138,8 @@ func TestDb(t *testing.T) {
 		Message:   "HelloMessage",
 		CreatedAt: time.Now(),
 	}
-	if err := db.Create(&newMessage); err.Error != nil {
-		log.Fatal(err.Error.Error())
+	if err := db.Model(&newChat).Association("Messages").Append(&newMessage); err != nil {
+		log.Fatal(err.Error())
 	}
 	searchMessage := Model.Message{}
 	if err := db.Where("message = ?", "HelloMessage").First(&searchMessage).Error; err != nil {

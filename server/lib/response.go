@@ -1,6 +1,6 @@
 package lib
 
-func Ok(message string, data interface{}) map[string]interface{} {
+func OkResponse(message string, data interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		"success": true,
 		"message": message,
@@ -8,7 +8,7 @@ func Ok(message string, data interface{}) map[string]interface{} {
 	}
 }
 
-func Error(message string, data interface{}) map[string]interface{} {
+func ErrorResponse(message string, data interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		"success": false,
 		"message": message,
