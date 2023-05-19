@@ -8,4 +8,5 @@ type Message struct {
 	UserId    string    `gorm:"notNull;size:255" json:"user_id"`
 	Message   string    `gorm:"notNull;size:255" json:"message"`
 	CreatedAt time.Time `gorm:"notNull;default:current_timestamp" json:"created_at"`
+	UpdatedAt time.Time `gorm:"type:timestamp" json:"updated_at"`
 }
