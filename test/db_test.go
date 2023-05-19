@@ -17,7 +17,7 @@ func TestDb(t *testing.T) {
 	assert.NotNil(t, db)
 
 	//remove existing data
-	db.Exec("DELETE FROM temp_codes")
+	db.Exec("DELETE FROM verifications")
 	db.Exec("DELETE FROM messages")
 	db.Exec("DELETE FROM chats")
 	db.Exec("DELETE FROM tags")
@@ -147,18 +147,16 @@ func TestDb(t *testing.T) {
 	}
 	assert.Equal(t, "HelloMessage", searchMessage.Message)
 
-	// Test TempCode
-	newTempCode := Model.TempCode{
-		Email: "hello@gmail.com",
-		Code:  "123456",
+	// Test Verification
+	newVerification := Model.Verification{
+		VerificationCode: "123456",
 	}
-	if err := db.Create(&newTempCode); err.Error != nil {
-		log.Fatal(err.Error.Error())
-	}
-	searchTempCode := Model.TempCode{}
-	if err := db.Where("email = ?", "hello@gmail.com").First(&searchTempCode).Error; err != nil {
+	if err := db.Model(&newUser).Association("Verification").Append(&newVerification); err != nil {
 		log.Fatal(err.Error())
 	}
-	assert.Equal(t, "hello@gmail.com", searchTempCode.Email)
-
+	searchVerification := Model.Verification{}
+	if err := db.Where("user_id = ?", "59d729af-f5a6-4e6c-9eac-027ed3fc11e0").First(&searchVerification).Error; err != nil {
+		log.Fatal(err.Error())
+	}
+	assert.Equal(t, "59d729af-f5a6-4e6c-9eac-027ed3fc11e0", searchVerification.UserId)
 }

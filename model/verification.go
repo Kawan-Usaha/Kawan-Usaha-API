@@ -1,7 +1,11 @@
 package Model
 
+import "time"
+
 type Verification struct {
-	VerificationCode string `gorm:"size:255;notNull" json:"verification_code"`
-	UserId           string `gorm:"notNull;size:255,primaryKey" json:"user_id"`
-	User             User   `gorm:"foreignkey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE,OnDelete:SET NULL;"`
+	Id               uint      `gorm:"notNull;autoIncrement;primarykey" json:"id"`
+	UserId           string    `gorm:"notNull;size:255" json:"user_id"`
+	VerificationCode string    `gorm:"size:255;notNull" json:"verification_code"`
+	CreatedAt        time.Time `gorm:"notNull;default:current_timestamp" json:"created_at"`
+	UpdatedAt        time.Time `gorm:"type:timestamp" json:"updated_at"`
 }
