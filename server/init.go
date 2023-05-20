@@ -59,5 +59,6 @@ func SetupRouter() *gin.Engine {
 	})
 	router.User(db, r)
 	router.Auth(db, r)
+	router.Usaha(db, r)
 	return r
 }
