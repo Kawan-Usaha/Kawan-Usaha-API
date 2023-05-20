@@ -12,7 +12,7 @@ import (
 
 func GenerateJWTToken(ttl time.Duration, payload interface{}) (string, error) {
 	// token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
-	// 	"id":  user.UserId,
+	// 	"id":  user.UserID,
 	// 	"exp": time.Now().Add(ttl).Unix(),
 	// 	"iat": time.Now().Unix(),
 	// 	"nbf": time.Now().Unix(),

@@ -69,7 +69,7 @@ func TestDb(t *testing.T) {
 
 	// Test Article
 	newArticle := Model.Article{
-		UserId:      "1234567890",
+		UserID:      "1234567890",
 		Title:       "HelloTitle",
 		Content:     "HelloContent",
 		Image:       "HelloImage",
@@ -108,7 +108,7 @@ func TestDb(t *testing.T) {
 	// Test Chat
 	newChat := Model.Chat{
 		ChatId:    "1234567890",
-		UserId:    "1234567890",
+		UserID:    "1234567890",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -123,8 +123,7 @@ func TestDb(t *testing.T) {
 
 	// Test Message
 	newMessage := Model.Message{
-		ChatId:    "1234567890",
-		UserId:    "1234567890",
+		ChatID:    "1234567890",
 		Message:   "HelloMessage",
 		CreatedAt: time.Now(),
 	}
@@ -148,7 +147,7 @@ func TestDb(t *testing.T) {
 	if err := db.Where("user_id = ?", "59d729af-f5a6-4e6c-9eac-027ed3fc11e0").First(&searchVerification).Error; err != nil {
 		log.Fatal(err.Error())
 	}
-	assert.Equal(t, "59d729af-f5a6-4e6c-9eac-027ed3fc11e0", searchVerification.UserId)
+	assert.Equal(t, "59d729af-f5a6-4e6c-9eac-027ed3fc11e0", searchVerification.UserID)
 
 	//remove existing data
 	db.Model(&Model.User{}).Association("Usaha").Clear()
