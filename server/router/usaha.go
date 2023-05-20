@@ -17,7 +17,13 @@ func Usaha(db *gorm.DB, q *gin.Engine) {
 	r.GET("/search", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.SearchOwnedUsahaByTitle(db, c)
 	})
+	r.GET("/detail", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.GetOwnedUsahaByID(db, c)
+	})
 	r.POST("/create", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.CreateUsaha(db, c)
+	})
+	r.DELETE("/delete", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.DeleteUsaha(db, c)
 	})
 }

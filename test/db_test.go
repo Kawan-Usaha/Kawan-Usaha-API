@@ -38,7 +38,7 @@ func TestDb(t *testing.T) {
 	// Test Usaha
 	newUsaha := Model.Usaha{
 		UsahaName: "HelloUsaha",
-		Type:      "HelloType",
+		Type:      1,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -148,7 +148,6 @@ func TestDb(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 	assert.Equal(t, "59d729af-f5a6-4e6c-9eac-027ed3fc11e0", searchVerification.UserID)
-
 	//remove existing data
 	db.Model(&Model.User{}).Association("Usaha").Clear()
 	db.Model(&Model.User{}).Association("Article").Clear()
