@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
@@ -9,7 +10,15 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func GenerateToken(ttl time.Duration, payload interface{}) (string, error) {
+func GenerateJWTToken(ttl time.Duration, payload interface{}) (string, error) {
+	// token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+	// 	"id":  user.UserId,
+	// 	"exp": time.Now().Add(ttl).Unix(),
+	// 	"iat": time.Now().Unix(),
+	// 	"nbf": time.Now().Unix(),
+	// })
+
+	// tokenString, err := token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
 	token := jwt.New(jwt.SigningMethodHS512)
 
 	now := time.Now().UTC()
@@ -20,7 +29,7 @@ func GenerateToken(ttl time.Duration, payload interface{}) (string, error) {
 	claims["iat"] = now.Unix()
 	claims["nbf"] = now.Unix()
 
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokenString, err := token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
 
 	if err != nil {
 		return "", fmt.Errorf("generating JWT Token failed: %w", err)
@@ -29,7 +38,16 @@ func GenerateToken(ttl time.Duration, payload interface{}) (string, error) {
 	return tokenString, nil
 }
 
-func ValidateToken() gin.HandlerFunc {
+func GenerateEmailCode() string {
+	charset := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	code := make([]byte, 6)
+	for i := range code {
+		code[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(code)
+}
+
+func ValidateJWTToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Authorization")
 		header = header[len("Bearer "):]
@@ -42,7 +60,7 @@ func ValidateToken() gin.HandlerFunc {
 			return
 		}
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			c.Set("id", claims["id"])
+			c.Set("sub", claims["sub"])
 			c.Next()
 			return
 		} else {
