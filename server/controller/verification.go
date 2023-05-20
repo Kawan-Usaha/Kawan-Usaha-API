@@ -19,7 +19,7 @@ func EmailVerificationCodeFromRegister(db *gorm.DB, c *gin.Context, user Model.U
 		FirstName: words[0],
 	}
 	verification := Model.Verification{
-		UserId:           user.UserId,
+		UserID:           user.UserId,
 		VerificationCode: code,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
@@ -45,7 +45,7 @@ func EmailVerificationCodeFromProfile(db *gorm.DB, c *gin.Context) {
 	db.Where("user_id = ?", user.UserId).Find(&previousVerification)
 	if len(previousVerification) > 0 {
 		for _, verification := range previousVerification {
-			if err := db.Model(&Model.Verification{}).Where("user_id=?", verification.UserId).Update("UsedCode", true).Error; err != nil {
+			if err := db.Model(&Model.Verification{}).Where("user_id=?", verification.UserID).Update("UsedCode", true).Error; err != nil {
 				c.JSON(500, lib.ErrorResponse("Failed to update verification", err.Error()))
 				return
 			}
@@ -60,7 +60,7 @@ func EmailVerificationCodeFromProfile(db *gorm.DB, c *gin.Context) {
 		FirstName: words[0],
 	}
 	verification := Model.Verification{
-		UserId:           user.UserId,
+		UserID:           user.UserId,
 		VerificationCode: code,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
@@ -92,7 +92,7 @@ func EmailVerificationCodeFromForgotPassword(db *gorm.DB, c *gin.Context) {
 		FirstName: words[0],
 	}
 	verification := Model.Verification{
-		UserId:           user.UserId,
+		UserID:           user.UserId,
 		VerificationCode: code,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
@@ -124,7 +124,7 @@ func EmailVerificationNormal(db *gorm.DB, c *gin.Context) {
 		c.JSON(400, lib.ErrorResponse("Verification code already used or invalid", nil))
 		return
 	}
-	if err := db.Model(&Model.User{}).Where("user_id=?", verification.UserId).Update("Verified", true).Error; err != nil {
+	if err := db.Model(&Model.User{}).Where("user_id=?", verification.UserID).Update("Verified", true).Error; err != nil {
 		c.JSON(500, lib.ErrorResponse("Failed to update verification", err.Error()))
 		return
 	}
@@ -151,7 +151,7 @@ func EmailVerificationForgotPassword(db *gorm.DB, c *gin.Context) {
 		return
 	}
 	var user Model.User
-	if err := db.Where("user_id = ?", verification.UserId).First(&user).Error; err != nil {
+	if err := db.Where("user_id = ?", verification.UserID).First(&user).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("User not found", err.Error()))
 		return
 	}
@@ -160,7 +160,7 @@ func EmailVerificationForgotPassword(db *gorm.DB, c *gin.Context) {
 		return
 	}
 	hashedpassword, _ := lib.HashPassword(input.Password)
-	if err := db.Model(&Model.User{}).Where("user_id=?", verification.UserId).Update("Password", hashedpassword).Error; err != nil {
+	if err := db.Model(&Model.User{}).Where("user_id=?", verification.UserID).Update("Password", hashedpassword).Error; err != nil {
 		c.JSON(500, lib.ErrorResponse("Failed to update password", err.Error()))
 		return
 	}
