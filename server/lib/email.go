@@ -56,32 +56,34 @@ func SendMailSingleReceiver(receiver string, data *EmailData, templateName strin
 }
 
 func SendMailMultipleReceiver(receivers []string, data *EmailData, templateName string) {
-	auth := smtp.PlainAuth(os.Getenv("EMAIL_FROM"), os.Getenv("EMAIL_USER"), os.Getenv("EMAIL_PASS"), os.Getenv("EMAIL_HOST"))
+	go func() {
+		auth := smtp.PlainAuth(os.Getenv("EMAIL_FROM"), os.Getenv("EMAIL_USER"), os.Getenv("EMAIL_PASS"), os.Getenv("EMAIL_HOST"))
 
-	var body bytes.Buffer
-	template, err := ParseTemplateDir("templates")
-	if err != nil {
-		log.Panic("Could not parse template", err)
-	}
+		var body bytes.Buffer
+		template, err := ParseTemplateDir("templates")
+		if err != nil {
+			log.Panic("Could not parse template", err)
+		}
 
-	template.ExecuteTemplate(&body, templateName, &data)
+		template.ExecuteTemplate(&body, templateName, &data)
 
-	msg := []byte(
-		fmt.Sprintf(
-			"From: %s\r\n"+
-				"To: %s\r\n"+
-				"Content-Type: text/html; charset=UTF-8\r\n"+
-				"Subject: %s\r\n"+
-				"\r\n"+
-				"%s", os.Getenv("EMAIL_FROM"), strings.Join(receivers, ","), data.Subject, body.String(),
-		),
-	)
+		msg := []byte(
+			fmt.Sprintf(
+				"From: %s\r\n"+
+					"To: %s\r\n"+
+					"Content-Type: text/html; charset=UTF-8\r\n"+
+					"Subject: %s\r\n"+
+					"\r\n"+
+					"%s", os.Getenv("EMAIL_FROM"), strings.Join(receivers, ","), data.Subject, body.String(),
+			),
+		)
 
-	errsend := smtp.SendMail(os.Getenv("EMAIL_HOST")+":"+os.Getenv("EMAIL_PORT"), auth, os.Getenv("EMAIL_USER"), receivers, msg)
+		errsend := smtp.SendMail(os.Getenv("EMAIL_HOST")+":"+os.Getenv("EMAIL_PORT"), auth, os.Getenv("EMAIL_USER"), receivers, msg)
 
-	if errsend != nil {
-		log.Panic(err)
-	}
+		if errsend != nil {
+			log.Panic(err)
+		}
+	}()
 }
 
 func ParseTemplateDir(dir string) (*template.Template, error) {

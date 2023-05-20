@@ -40,6 +40,18 @@ func EmailVerificationCodeFromProfile(db *gorm.DB, c *gin.Context) {
 		c.JSON(400, lib.ErrorResponse("Failed to get user", err.Error()))
 		return
 	}
+
+	var previousVerification []Model.Verification
+	db.Where("user_id = ?", user.UserId).Find(&previousVerification)
+	if len(previousVerification) > 0 {
+		for _, verification := range previousVerification {
+			if err := db.Model(&Model.Verification{}).Where("user_id=?", verification.UserId).Update("UsedCode", true).Error; err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to update verification", err.Error()))
+				return
+			}
+		}
+	}
+
 	words := strings.Split(user.Name, " ")
 	code := lib.GenerateEmailCode()
 	emaildata := lib.EmailData{
@@ -61,12 +73,8 @@ func EmailVerificationCodeFromProfile(db *gorm.DB, c *gin.Context) {
 	c.JSON(200, lib.OkResponse("Email verification sent", nil))
 }
 
-type forgotPassword struct {
-	Email string `json:"email"`
-}
-
 func EmailVerificationCodeFromForgotPassword(db *gorm.DB, c *gin.Context) {
-	var input forgotPassword
+	var input Model.ForgotPassword
 	if err := c.BindJSON(&input); err != nil {
 		c.JSON(400, lib.ErrorResponse("Invalid input", err.Error()))
 		return
@@ -112,6 +120,10 @@ func EmailVerificationNormal(db *gorm.DB, c *gin.Context) {
 		c.JSON(400, lib.ErrorResponse("Verification code expired, please create a new One", nil))
 		return
 	}
+	if verification.UsedCode {
+		c.JSON(400, lib.ErrorResponse("Verification code already used or invalid", nil))
+		return
+	}
 	if err := db.Model(&Model.User{}).Where("user_id=?", verification.UserId).Update("Verified", true).Error; err != nil {
 		c.JSON(500, lib.ErrorResponse("Failed to update verification", err.Error()))
 		return
@@ -119,14 +131,8 @@ func EmailVerificationNormal(db *gorm.DB, c *gin.Context) {
 	c.JSON(200, lib.OkResponse("Email verified", nil))
 }
 
-type resetPassword struct {
-	VerificationCode string `json:"verification_code"`
-	Password         string `json:"password"`
-	PasswordConfirm  string `json:"password_confirm"`
-}
-
 func EmailVerificationForgotPassword(db *gorm.DB, c *gin.Context) {
-	var input resetPassword
+	var input Model.ResetPassword
 	if err := c.BindJSON(&input); err != nil {
 		c.JSON(400, lib.ErrorResponse("Invalid input", err.Error()))
 		return
@@ -140,6 +146,10 @@ func EmailVerificationForgotPassword(db *gorm.DB, c *gin.Context) {
 		c.JSON(400, lib.ErrorResponse("Verification code expired, please create a new One", nil))
 		return
 	}
+	if verification.UsedCode {
+		c.JSON(400, lib.ErrorResponse("Verification code already used or invalid", nil))
+		return
+	}
 	var user Model.User
 	if err := db.Where("user_id = ?", verification.UserId).First(&user).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("User not found", err.Error()))
@@ -151,7 +161,7 @@ func EmailVerificationForgotPassword(db *gorm.DB, c *gin.Context) {
 	}
 	hashedpassword, _ := lib.HashPassword(input.Password)
 	if err := db.Model(&Model.User{}).Where("user_id=?", verification.UserId).Update("Password", hashedpassword).Error; err != nil {
-		c.JSON(500, lib.ErrorResponse("Failed to update verification", err.Error()))
+		c.JSON(500, lib.ErrorResponse("Failed to update password", err.Error()))
 		return
 	}
 	c.JSON(200, lib.OkResponse("Password changed successfully", nil))

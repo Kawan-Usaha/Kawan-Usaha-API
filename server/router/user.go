@@ -10,7 +10,12 @@ import (
 
 func User(db *gorm.DB, q *gin.Engine) {
 	r := q.Group("/user")
-	r.GET("", lib.ValidateJWTToken(), func(c *gin.Context) {
+	// Get logged in User profile
+	r.GET("/profile", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.UserProfile(db, c)
+	})
+	// Update logged in User profile
+	r.PATCH("/profile", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.UpdateUserProfile(db, c)
 	})
 }

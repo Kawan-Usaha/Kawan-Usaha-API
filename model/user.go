@@ -20,7 +20,6 @@ type User struct {
 }
 
 type ChangePassword struct {
-	Password string `gorm:"notNull;size:255" json:"password"`
-	Newpass1 string `gorm:"notNull;size:255" json:"newpass1"`
-	Newpass2 string `gorm:"notNull;size:255" json:"newpass2"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"password_confirm"`
 }

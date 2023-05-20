@@ -28,3 +28,23 @@ func UserProfile(db *gorm.DB, c *gin.Context) {
 	}
 	c.JSON(200, lib.OkResponse("Success get user", result))
 }
+
+func UpdateUserProfile(db *gorm.DB, c *gin.Context) {
+	sub, _ := c.Get("sub")
+	subs := sub.(string)
+	var user Model.User
+	if err := db.Where("user_id = ?", subs).First(&user).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get user", err.Error()))
+		return
+	}
+	var input Model.User
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
+		return
+	}
+	if err := db.Model(&user).Updates(input).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
+		return
+	}
+	c.JSON(200, lib.OkResponse("Success update user", nil))
+}
