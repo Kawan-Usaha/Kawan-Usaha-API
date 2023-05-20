@@ -16,16 +16,6 @@ func TestDb(t *testing.T) {
 	db := Database.Open()
 	assert.NotNil(t, db)
 
-	//remove existing data
-	db.Exec("DELETE FROM verifications")
-	db.Exec("DELETE FROM messages")
-	db.Exec("DELETE FROM chats")
-	db.Exec("DELETE FROM tags")
-	db.Exec("DELETE FROM categories")
-	db.Exec("DELETE FROM articles")
-	db.Exec("DELETE FROM usahas")
-	db.Exec("DELETE FROM users")
-
 	// Test User
 	newUser := Model.User{
 		UserId:    "59d729af-f5a6-4e6c-9eac-027ed3fc11e0",
@@ -159,4 +149,23 @@ func TestDb(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 	assert.Equal(t, "59d729af-f5a6-4e6c-9eac-027ed3fc11e0", searchVerification.UserId)
+
+	//remove existing data
+	db.Model(&Model.User{}).Association("Usaha").Clear()
+	db.Model(&Model.User{}).Association("Article").Clear()
+	db.Model(&Model.Usaha{}).Association("Tags").Clear()
+	db.Model(&Model.Category{}).Association("Tags").Clear()
+	db.Model(&Model.Article{}).Association("Category").Clear()
+	db.Model(&Model.Article{}).Association("User").Clear()
+	db.Model(&Model.Tag{}).Association("Usaha").Clear()
+	db.Model(&Model.Tag{}).Association("Category").Clear()
+
+	db.Delete(&Model.Tag{}, "id = ?", uint(1))
+	db.Delete(&Model.Verification{}, "user_id = ?", "59d729af-f5a6-4e6c-9eac-027ed3fc11e0")
+	db.Delete(&Model.Article{}, "id = ?", uint(1))
+	db.Delete(&Model.Category{}, "id = ?", uint(1))
+	db.Delete(&Model.Usaha{}, "id = ?", uint(1))
+	db.Delete(&Model.User{}, "user_id = ?", "59d729af-f5a6-4e6c-9eac-027ed3fc11e0")
+	db.Delete(&Model.Chat{}, "chat_id = ?", "1234567890")
+	db.Delete(&Model.Message{}, "message = ?", "HelloMessage")
 }
