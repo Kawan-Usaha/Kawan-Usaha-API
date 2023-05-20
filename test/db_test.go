@@ -46,10 +46,10 @@ func TestDb(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 	searchUsaha := Model.Usaha{}
-	if err := db.Where("id = ?", uint(1)).First(&searchUsaha).Error; err != nil {
+	if err := db.Where("usaha_name = ?", "HelloUsaha").First(&searchUsaha).Error; err != nil {
 		log.Fatal(err.Error())
 	}
-	assert.Equal(t, uint(1), searchUsaha.ID)
+	assert.Equal(t, "HelloUsaha", searchUsaha.UsahaName)
 
 	// Test Category
 	newCategory := Model.Category{
@@ -112,8 +112,8 @@ func TestDb(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	if err := db.Create(&newChat); err.Error != nil {
-		log.Fatal(err.Error.Error())
+	if err := db.Model(&newUser).Association("Chat").Append(&newChat); err != nil {
+		log.Fatal(err.Error())
 	}
 	searchChat := Model.Chat{}
 	if err := db.Where("chat_id = ?", "1234567890").First(&searchChat).Error; err != nil {
