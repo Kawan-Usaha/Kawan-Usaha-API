@@ -7,6 +7,6 @@ type Chat struct {
 	ChatId    string    `gorm:"size:255;notNull;primaryKey" json:"chat_id"`
 	UserId    string    `gorm:"notNull;size:255" json:"user_id"`
 	Messages  []Message `gorm:"foreignKey:ChatId;association_foreignkey:ChatId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE,OnDelete:SET NULL;" json:"messages"`
-	CreatedAt time.Time `gorm:"notNull;default:current_timestamp" json:"created_at"`
-	UpdatedAt time.Time `gorm:"type:timestamp" json:"updated_at"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

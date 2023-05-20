@@ -10,10 +10,10 @@ type User struct {
 	Name         string       `gorm:"notNull;size:255" json:"name"`
 	Email        string       `gorm:"size:255;notNull;uniqueIndex" json:"email"`
 	Password     string       `gorm:"notNull;size:255" json:"password"`
-	Usaha        []Usaha      `gorm:"foreignkey:User;association_foreignkey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE,OnDelete:SET NULL;"`
-	Article      []Article    `gorm:"foreignkey:UserId;association_foreignkey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE,OnDelete:SET NULL;" json:"article"`
+	Usaha        []Usaha      `gorm:"Null;foreignkey:User;association_foreignkey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Article      []Article    `gorm:"Null;foreignkey:UserId;association_foreignkey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"article"`
 	Verified     bool         `gorm:"notNull;default:false" json:"verified"`
-	Verification Verification `gorm:"foreignKey:UserId;association_foreignkey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE,OnDelete:SET NULL;" json:"verification"`
+	Verification Verification `gorm:"Null;foreignKey:UserId;association_foreignkey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"verification"`
 	RoleId       uint         `gorm:"notNull;default:0" json:"role_id"`
 	CreatedAt    time.Time    `json:"created_at"`
 	UpdatedAt    time.Time    `json:"updated_at"`
