@@ -38,7 +38,7 @@ func TestDb(t *testing.T) {
 	// Test Usaha
 	newUsaha := Model.Usaha{
 		UsahaName: "HelloUsaha",
-		Type:      "HelloType",
+		Type:      1,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -123,7 +123,7 @@ func TestDb(t *testing.T) {
 
 	// Test Message
 	newMessage := Model.Message{
-		ChatID:    "1234567890",
+		ChatId:    "1234567890",
 		Message:   "HelloMessage",
 		CreatedAt: time.Now(),
 	}

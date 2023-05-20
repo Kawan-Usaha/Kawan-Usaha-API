@@ -5,6 +5,11 @@ import (
 )
 
 type Category struct {
+	//ID: Autoincrement of ID for Category, primary key.
+	//Title: Title of the Category.
+	//Image: Image of the Category (URL).
+	//Tags: Tags of the Category.
+	//Articles: Articles the Category has.
 	ID        uint      `gorm:"notNull;autoIncrement;primarykey" json:"id"`
 	Title     string    `gorm:"notNull;size:255" json:"title"`
 	Image     string    `gorm:"null;size:255" json:"image"`

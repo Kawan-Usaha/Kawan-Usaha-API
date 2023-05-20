@@ -5,6 +5,17 @@ import (
 )
 
 type User struct {
+	//ID: Autoincrement ID user.
+	//UserId: Primary key user, uses uuid.
+	//Name: Name of user.
+	//Email: Email of user.
+	//Password: Password of user. Saved as hash.
+	//Usaha: Usaha/UMKM of user.
+	//Article: Articles made by user.
+	//Chat: Chats made by user.
+	//Verified: Is user verified or not.
+	//Verification: Verification code of user.
+	//Role: Role of user. 0: User, 1: Admin (WIP).
 	ID           uint         `gorm:"notNull;autoIncrement" json:"id"`
 	UserId       string       `gorm:"notNull;size:255;primaryKey;column:user_id" json:"user_id"`
 	Name         string       `gorm:"notNull;size:255" json:"name"`
