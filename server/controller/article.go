@@ -190,10 +190,14 @@ func UpdateArticle(db *gorm.DB, c *gin.Context) {
 	c.JSON(200, lib.OkResponse("Success update article", result))
 }
 
+type deleteArticle struct {
+	ID int `json:"id"`
+}
+
 func DeleteArticle(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
-	var del delete
+	var del deleteArticle
 	if err := c.ShouldBindJSON(&del); err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to bind json", err.Error()))
 		return
