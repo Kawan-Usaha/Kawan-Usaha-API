@@ -36,12 +36,13 @@ func Auth(db *gorm.DB, q *gin.Engine) {
 	r.POST("/forgot-password", func(c *gin.Context) {
 		controller.EmailVerificationCodeFromForgotPassword(db, c)
 	})
+	s := r.Group("/forgot-password")
 	// Generate verification code for forgot password
-	r.POST("/forgot-password/generate", func(c *gin.Context) {
+	s.POST("/generate", func(c *gin.Context) {
 		controller.EmailVerificationCodeFromForgotPassword(db, c)
 	})
 	// Verify verification code for forgot password
-	r.POST("/forgot-password/verify", func(c *gin.Context) {
+	s.POST("/verify", func(c *gin.Context) {
 		controller.EmailVerificationForgotPassword(db, c)
 	})
 

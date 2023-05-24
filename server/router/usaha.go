@@ -23,6 +23,9 @@ func Usaha(db *gorm.DB, q *gin.Engine) {
 	r.POST("/create", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.CreateUsaha(db, c)
 	})
+	r.PATCH("/update", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.UpdateUsaha(db, c)
+	})
 	r.DELETE("/delete", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.DeleteUsaha(db, c)
 	})

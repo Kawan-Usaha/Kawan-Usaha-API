@@ -3,6 +3,7 @@ package controller
 import (
 	Model "kawan-usaha-api/model"
 	"kawan-usaha-api/server/lib"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -42,6 +43,7 @@ func UpdateUserProfile(db *gorm.DB, c *gin.Context) {
 		c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
 		return
 	}
+	input.UpdatedAt = time.Now()
 	if err := db.Model(&user).Updates(input).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
 		return
