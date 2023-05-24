@@ -149,11 +149,26 @@ func UpdateUsaha(db *gorm.DB, c *gin.Context) {
 		return
 	}
 	input.UpdatedAt = time.Now()
-	for i := range input.Tags {
-		tagName := strings.ToLower(input.Tags[i].Name)
-		var existingTag Model.Tag
-		err := db.Where("LOWER(name) = ?", tagName).First(&existingTag).Error
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+
+	existingTagsMap := make(map[string]Model.Tag)
+	updatedTags := make([]Model.Tag, 0)
+
+	existingTags := make([]Model.Tag, 0)
+	if err := db.Find(&existingTags).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get existing tags", err.Error()))
+		return
+	}
+	for _, existingTag := range existingTags {
+		existingTagsMap[strings.ToLower(existingTag.Name)] = existingTag
+	}
+
+	for _, inputTag := range input.Tags {
+		tagName := strings.ToLower(inputTag.Name)
+		existingTag, exists := existingTagsMap[tagName]
+
+		if exists {
+			updatedTags = append(updatedTags, existingTag)
+		} else {
 			newTag := Model.Tag{
 				Name:      tagName,
 				CreatedAt: time.Now(),
@@ -163,16 +178,41 @@ func UpdateUsaha(db *gorm.DB, c *gin.Context) {
 				c.JSON(400, lib.ErrorResponse("Failed to create tag", err.Error()))
 				return
 			}
-			input.Tags[i] = newTag
-		} else if err != nil {
-			c.JSON(400, lib.ErrorResponse("Failed to check existing tag", err.Error()))
-			return
-		} else {
-			input.Tags[i] = existingTag
+			updatedTags = append(updatedTags, newTag)
 		}
 	}
-	if edd := db.Preload("Tag").Model(&usaha).Updates(input).Error; edd != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to update usaha", edd.Error()))
+
+	usaha.Tags = updatedTags
+
+	disconnectedTags := make([]Model.Tag, 0)
+	if err := db.Model(&usaha).Association("Tags").Find(&disconnectedTags); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to find disconnected tags", err.Error()))
+		return
+	}
+
+	tagsToDisconnect := make([]Model.Tag, 0)
+	for _, tag := range disconnectedTags {
+		found := false
+		for _, inputTag := range input.Tags {
+			if strings.EqualFold(strings.ToLower(inputTag.Name), strings.ToLower(tag.Name)) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			tagsToDisconnect = append(tagsToDisconnect, tag)
+		}
+	}
+
+	if len(tagsToDisconnect) > 0 {
+		if err := db.Model(&usaha).Association("Tags").Delete(tagsToDisconnect); err != nil {
+			c.JSON(400, lib.ErrorResponse("Failed to disconnect tags from Usaha", err.Error()))
+			return
+		}
+	}
+
+	if err := db.Save(&usaha).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to update usaha", err.Error()))
 		return
 	}
 	if err := db.Preload("User").Preload("Tags").Where("user_id = ?", subs).Where("id = ?", input.ID).First(&usaha).Error; err != nil {
@@ -200,7 +240,7 @@ func UpdateUsaha(db *gorm.DB, c *gin.Context) {
 	c.JSON(200, lib.OkResponse("Success update usaha", result))
 }
 
-type delete struct {
+type deleteUsaha struct {
 	ID int `json:"id"`
 }
 
@@ -208,7 +248,7 @@ func DeleteUsaha(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
 
-	var del delete
+	var del deleteUsaha
 	if err := c.ShouldBindJSON(&del); err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to bind JSON", err.Error()))
 		return
