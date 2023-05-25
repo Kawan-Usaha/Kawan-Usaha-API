@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -50,6 +51,16 @@ func GenerateEmailCode() string {
 func ValidateJWTToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Authorization")
+		if header == "" {
+			c.JSON(401, ErrorResponse("JWT not found.", gin.H{"error": "Missing Authorization header"}))
+			c.Abort()
+			return
+		}
+		if !strings.HasPrefix(header, "Bearer ") {
+			c.JSON(401, ErrorResponse("Missing header prefix.", gin.H{"error": "Invalid Authorization header format"}))
+			c.Abort()
+			return
+		}
 		header = header[len("Bearer "):]
 		token, err := jwt.Parse(header, func(t *jwt.Token) (interface{}, error) {
 			return []byte(os.Getenv("TOKEN_SECRET")), nil
