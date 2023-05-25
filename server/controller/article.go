@@ -13,43 +13,99 @@ import (
 func ListOwnedArticles(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
-	var article []Model.Article
-	if err := db.Preload("Category").Where("user_id = ?", subs).Find(&article).Error; err != nil {
+
+	// Retrieve page and page size from query parameters
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1 // Set default page to 1 if invalid or not provided
+	}
+
+	pageSize, err := strconv.Atoi(c.Query("pageSize"))
+	if err != nil || pageSize <= 0 {
+		pageSize = 10 // Set default page size to 10 if invalid or not provided
+	}
+
+	var totalArticles int64
+	if err := db.Model(&Model.Article{}).Where("user_id = ?", subs).Count(&totalArticles).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
 	}
-	result := make([]gin.H, 0)
-	for _, v := range article {
-		result = append(result, gin.H{
+
+	var articles []Model.Article
+	offset := (page - 1) * pageSize
+	if err := db.Preload("Category").Where("user_id = ?", subs).Offset(offset).Limit(pageSize).Order("updated_at desc").Find(&articles).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
+		return
+	}
+
+	result := make([]gin.H, len(articles))
+	for i, v := range articles {
+		result[i] = gin.H{
 			"id":           v.ID,
 			"title":        v.Title,
 			"is_published": v.IsPublished,
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
-		})
+			"user_id":      v.UserID,
+		}
 	}
-	c.JSON(200, lib.OkResponse("Success get article", result))
+
+	response := gin.H{
+		"total_articles": totalArticles,
+		"page":           page,
+		"page_size":      pageSize,
+		"articles":       result,
+	}
+
+	c.JSON(200, lib.OkResponse("Success get article", response))
 }
 
 func ListAllArticles(db *gorm.DB, c *gin.Context) {
-	var article []Model.Article
-	if err := db.Preload("Category").Find(&article).Error; err != nil {
+	// Retrieve page and page size from query parameters
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1 // Set default page to 1 if invalid or not provided
+	}
+
+	pageSize, err := strconv.Atoi(c.Query("pageSize"))
+	if err != nil || pageSize <= 0 {
+		pageSize = 10 // Set default page size to 10 if invalid or not provided
+	}
+
+	var totalArticles int64
+	if err := db.Model(&Model.Article{}).Count(&totalArticles).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
 	}
-	result := make([]gin.H, 0)
-	for _, v := range article {
-		result = append(result, gin.H{
+
+	var articles []Model.Article
+	offset := (page - 1) * pageSize
+	if err := db.Preload("Category").Offset(offset).Limit(pageSize).Order("updated_at desc").Find(&articles).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
+		return
+	}
+
+	result := make([]gin.H, len(articles))
+	for i, v := range articles {
+		result[i] = gin.H{
 			"id":           v.ID,
 			"title":        v.Title,
 			"is_published": v.IsPublished,
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
-		})
+		}
 	}
-	c.JSON(200, lib.OkResponse("Success get article", result))
+
+	response := gin.H{
+		"total_articles": totalArticles,
+		"page":           page,
+		"page_size":      pageSize,
+		"articles":       result,
+	}
+
+	c.JSON(200, lib.OkResponse("Success get article", response))
 }
 
 func GetArticle(db *gorm.DB, c *gin.Context) {
@@ -64,23 +120,52 @@ func GetArticle(db *gorm.DB, c *gin.Context) {
 func SearchOwnedArticles(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
-	var article []Model.Article
-	if err := db.Where("user_id = ? AND LOWER(title) LIKE ?", subs, "%"+c.Query("title")+"%").Find(&article).Error; err != nil {
+
+	// Retrieve page and page size from query parameters
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1 // Set default page to 1 if invalid or not provided
+	}
+
+	pageSize, err := strconv.Atoi(c.Query("pageSize"))
+	if err != nil || pageSize <= 0 {
+		pageSize = 10 // Set default page size to 10 if invalid or not provided
+	}
+
+	var totalArticles int64
+	query := db.Model(&Model.Article{}).Where("user_id = ? AND LOWER(title) LIKE ?", subs, "%"+c.Query("title")+"%")
+	if err := query.Count(&totalArticles).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
 	}
-	result := make([]gin.H, 0)
-	for _, v := range article {
-		result = append(result, gin.H{
+
+	var articles []Model.Article
+	offset := (page - 1) * pageSize
+	if err := query.Preload("Category").Offset(offset).Limit(pageSize).Order("updated_at desc").Find(&articles).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
+		return
+	}
+
+	result := make([]gin.H, len(articles))
+	for i, v := range articles {
+		result[i] = gin.H{
 			"id":           v.ID,
 			"title":        v.Title,
 			"is_published": v.IsPublished,
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
-		})
+		}
 	}
-	c.JSON(200, lib.OkResponse("Success get article", result))
+
+	response := gin.H{
+		"total_articles": totalArticles,
+		"page":           page,
+		"page_size":      pageSize,
+		"articles":       result,
+	}
+
+	c.JSON(200, lib.OkResponse("Success get article", response))
 }
 
 func SearchAllArticles(db *gorm.DB, c *gin.Context) {
