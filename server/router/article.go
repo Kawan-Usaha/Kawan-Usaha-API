@@ -11,11 +11,11 @@ import (
 func Article(db *gorm.DB, q *gin.Engine) {
 	r := q.Group("/article")
 	// Get all articles
-	r.GET("/all", func(c *gin.Context) {
+	r.GET("", func(c *gin.Context) {
 		controller.ListAllArticles(db, c)
 	})
 	// Get article by id
-	r.GET("", func(c *gin.Context) {
+	r.GET("/content", func(c *gin.Context) {
 		controller.GetArticle(db, c)
 	})
 	// Get article by user id
