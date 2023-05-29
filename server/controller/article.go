@@ -110,11 +110,21 @@ func ListAllArticles(db *gorm.DB, c *gin.Context) {
 
 func GetArticle(db *gorm.DB, c *gin.Context) {
 	var article Model.Article
-	if err := db.Where("id = ?", c.Query("id")).First(&article).Error; err != nil {
+	if err := db.Where("id = ?", c.Query("id")).Preload("User").Preload("Category").First(&article).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
 	}
-	c.JSON(200, lib.OkResponse("Success get article", article))
+	response := gin.H{
+		"id":           article.ID,
+		"title":        article.Title,
+		"content":      article.Content,
+		"is_published": article.IsPublished,
+		"category":     article.Category,
+		"user":         article.User.Name,
+		"created_at":   article.CreatedAt,
+		"updated_at":   article.UpdatedAt,
+	}
+	c.JSON(200, lib.OkResponse("Success get article", response))
 }
 
 func SearchOwnedArticles(db *gorm.DB, c *gin.Context) {
@@ -220,51 +230,90 @@ func SearchAllArticles(db *gorm.DB, c *gin.Context) {
 func CreateArticle(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
-	var article Model.Article
-	if err := c.ShouldBindJSON(&article); err != nil {
+	var requestData struct {
+		Article  Model.Article `json:"article"`
+		Category uint          `json:"category"`
+	}
+	if err := c.ShouldBindJSON(&requestData); err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to bind json", err.Error()))
 		return
 	}
-	article.UserID = subs
-	article.CreatedAt = time.Now()
-	article.UpdatedAt = time.Now()
-	if err := db.Create(&article).Error; err != nil {
+
+	// Set the user ID
+	requestData.Article.UserID = subs
+	requestData.Article.CreatedAt = time.Now()
+	requestData.Article.UpdatedAt = time.Now()
+
+	// Find the category
+	var category Model.Category
+	if err := db.First(&category, requestData.Category).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to find category", err.Error()))
+		return
+	}
+
+	// Assign the category to the article
+	requestData.Article.Category = []Model.Category{category}
+
+	if err := db.Create(&requestData.Article).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to create article", err.Error()))
 		return
 	}
+
 	result := gin.H{
-		"id":           article.ID,
-		"title":        article.Title,
-		"is_published": article.IsPublished,
-		"category":     article.Category,
-		"created_at":   article.CreatedAt,
-		"updated_at":   article.UpdatedAt,
+		"id":           requestData.Article.ID,
+		"title":        requestData.Article.Title,
+		"is_published": requestData.Article.IsPublished,
+		"category":     requestData.Article.Category,
+		"created_at":   requestData.Article.CreatedAt,
+		"updated_at":   requestData.Article.UpdatedAt,
 	}
+
 	c.JSON(200, lib.OkResponse("Success create article", result))
 }
 
 func UpdateArticle(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
-	var input Model.Article
+	var input struct {
+		Article  Model.Article `json:"article"`
+		Category uint          `json:"category"`
+	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to bind json", err.Error()))
 		return
 	}
+
 	var article Model.Article
-	if err := db.Where("id = ? AND user_id = ?", input.ID, subs).First(&article).Error; err != nil {
+	if err := db.Where("id = ? AND user_id = ?", input.Article.ID, subs).First(&article).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
 	}
+
+	// Update the article properties
+	article.Title = input.Article.Title
+	article.Content = input.Article.Content
+	article.Image = input.Article.Image
+	article.IsPublished = input.Article.IsPublished
 	article.UpdatedAt = time.Now()
-	if err := db.Model(&article).Updates(input).Error; err != nil {
+
+	// Find the category
+	var category Model.Category
+	if err := db.First(&category, input.Category).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to find category", err.Error()))
+		return
+	}
+
+	// Assign the category to the article
+	article.Category = []Model.Category{category}
+
+	if err := db.Save(&article).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to update article", err.Error()))
 		return
 	}
 
 	result := gin.H{
 		"id":           article.ID,
-		"user_id":      article.UserID, // "user_id" is not in the model, but it is in the response
+		"user_id":      article.UserID,
 		"title":        article.Title,
 		"is_published": article.IsPublished,
 		"category":     article.Category,
@@ -272,6 +321,7 @@ func UpdateArticle(db *gorm.DB, c *gin.Context) {
 		"created_at":   article.CreatedAt,
 		"updated_at":   article.UpdatedAt,
 	}
+
 	c.JSON(200, lib.OkResponse("Success update article", result))
 }
 
@@ -282,18 +332,23 @@ type deleteArticle struct {
 func DeleteArticle(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
-	var del deleteArticle
+	var del struct {
+		ID uint `json:"id"`
+	}
 	if err := c.ShouldBindJSON(&del); err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to bind json", err.Error()))
 		return
 	}
 	var article Model.Article
-	if err := db.Where("id = ? AND user_id = ?", del.ID, subs).First(&article).Error; err != nil {
+	if err := db.Preload("Category").Preload("User").Where("id = ? AND user_id = ?", del.ID, subs).First(&article).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
 	}
+
+	// Clear the article's associations with categories and users
 	db.Model(&article).Association("Category").Clear()
 	db.Model(&article).Association("User").Clear()
+
 	if err := db.Delete(&article).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to delete article", err.Error()))
 		return

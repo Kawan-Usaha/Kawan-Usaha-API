@@ -64,6 +64,7 @@ func SetupRouter() *gin.Engine {
 	router.Auth(db, r)
 	router.Usaha(db, r)
 	router.Article(db, r)
+	router.Category(db, r)
 	return r
 }
 
