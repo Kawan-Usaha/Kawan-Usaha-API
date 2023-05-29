@@ -35,7 +35,7 @@ func SearchOwnedUsahaByTitle(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
 	var usaha []Model.Usaha
-	if err := db.Where("user_id = ? AND LOWER(usaha_name) LIKE ?", subs, "%"+strings.ToLower(c.Query("name"))+"%").Find(&usaha).Error; err != nil {
+	if err := db.Preload("Tags").Where("user_id = ? AND LOWER(usaha_name) LIKE ?", subs, "%"+strings.ToLower(c.Query("name"))+"%").Find(&usaha).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get usaha", err.Error()))
 		return
 	}
