@@ -20,7 +20,7 @@ func ListOwnedArticles(db *gorm.DB, c *gin.Context) {
 		page = 1 // Set default page to 1 if invalid or not provided
 	}
 
-	pageSize, err := strconv.Atoi(c.Query("pageSize"))
+	pageSize, err := strconv.Atoi(c.Query("page_size"))
 	if err != nil || pageSize <= 0 {
 		pageSize = 10 // Set default page size to 10 if invalid or not provided
 	}
@@ -68,7 +68,7 @@ func ListAllArticles(db *gorm.DB, c *gin.Context) {
 		page = 1 // Set default page to 1 if invalid or not provided
 	}
 
-	pageSize, err := strconv.Atoi(c.Query("pageSize"))
+	pageSize, err := strconv.Atoi(c.Query("page_size"))
 	if err != nil || pageSize <= 0 {
 		pageSize = 10 // Set default page size to 10 if invalid or not provided
 	}
@@ -137,7 +137,7 @@ func SearchOwnedArticles(db *gorm.DB, c *gin.Context) {
 		page = 1 // Set default page to 1 if invalid or not provided
 	}
 
-	pageSize, err := strconv.Atoi(c.Query("pageSize"))
+	pageSize, err := strconv.Atoi(c.Query("page_size"))
 	if err != nil || pageSize <= 0 {
 		pageSize = 10 // Set default page size to 10 if invalid or not provided
 	}
