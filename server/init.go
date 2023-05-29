@@ -82,9 +82,7 @@ func ginBodyLogMiddleware(c *gin.Context) {
 	c.Writer = blw
 	c.Next()
 	statusCode := c.Writer.Status()
-	if statusCode >= 400 {
-		//ok this is an request with error, let's make a record for it
-		// now print body (or log in your preferred way)
+	if statusCode >= 400 && gin.Mode() != "release" {
 		log.Println("Response body: " + blw.body.String())
 	}
 }
