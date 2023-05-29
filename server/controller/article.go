@@ -218,10 +218,10 @@ func SearchAllArticles(db *gorm.DB, c *gin.Context) {
 	}
 
 	response := gin.H{
-		"page":     page,
-		"pageSize": pageSize,
-		"total":    total,
-		"articles": result,
+		"page":      page,
+		"page_size": pageSize,
+		"total":     total,
+		"articles":  result,
 	}
 
 	c.JSON(200, lib.OkResponse("Success get articles", response))
