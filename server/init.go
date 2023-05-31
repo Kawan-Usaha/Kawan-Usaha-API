@@ -1,9 +1,11 @@
 package server
 
 import (
-	"kawan-usaha-api/db"
+	"bytes"
+	Database "kawan-usaha-api/db"
 	"kawan-usaha-api/server/lib"
 	"kawan-usaha-api/server/router"
+	"log"
 	"net/http"
 	"os"
 
@@ -44,11 +46,44 @@ func SetupRouter() *gin.Engine {
 		}
 	})
 
+	// Config
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, lib.ErrorResponse("API Not Found", nil))
+	})
+
+	r.RemoveExtraSlash = true
+	r.RedirectTrailingSlash = true
+	r.Use(ginBodyLogMiddleware)
+
 	//Routers
 
 	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, lib.Ok("Welcome to Kawan Usaha API!", nil))
+		c.JSON(http.StatusOK, lib.OkResponse("Welcome to Kawan Usaha API!", nil))
 	})
 	router.User(db, r)
+	router.Auth(db, r)
+	router.Usaha(db, r)
+	router.Article(db, r)
+	router.Category(db, r)
 	return r
+}
+
+type bodyLogWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w bodyLogWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
+func ginBodyLogMiddleware(c *gin.Context) {
+	blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	c.Writer = blw
+	c.Next()
+	statusCode := c.Writer.Status()
+	if statusCode >= 400 && gin.Mode() != "release" {
+		log.Println("Response body: " + blw.body.String())
+	}
 }

@@ -2,7 +2,7 @@ package Database
 
 import (
 	"fmt"
-	"kawan-usaha-api/model"
+	Model "kawan-usaha-api/model"
 	"log"
 	"os"
 
@@ -36,7 +36,16 @@ func Open() *gorm.DB {
 	}
 
 	// Model
-	if err = db.AutoMigrate(&Model.User{}); err != nil {
+	if err = db.AutoMigrate(
+		&Model.User{},
+		&Model.Usaha{},
+		&Model.Article{},
+		&Model.Category{},
+		&Model.Chat{},
+		&Model.Message{},
+		&Model.Tag{},
+		&Model.Verification{}); err != nil {
+
 		log.Fatal(err.Error())
 	}
 
