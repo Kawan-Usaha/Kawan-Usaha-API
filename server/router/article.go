@@ -3,43 +3,66 @@ package router
 import (
 	"kawan-usaha-api/server/controller"
 	"kawan-usaha-api/server/lib"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func Article(db *gorm.DB, q *gin.Engine) {
-	r := q.Group("/article")
+var (
+	onceArticle     sync.Once
+	articleInstance *ArticleSingleton
+)
+
+type ArticleSingleton struct {
+	db *gorm.DB
+	q  *gin.Engine
+}
+
+func GetArticleInstance() *ArticleSingleton {
+	onceArticle.Do(func() {
+		articleInstance = &ArticleSingleton{}
+	})
+	return articleInstance
+}
+
+func (a *ArticleSingleton) Init(db *gorm.DB, q *gin.Engine) {
+	a.db = db
+	a.q = q
+}
+
+func (a *ArticleSingleton) SetupRoutes() {
+	r := a.q.Group("/article")
 	// Get all articles
 	r.GET("", func(c *gin.Context) {
-		controller.ListAllArticles(db, c)
+		controller.ListAllArticles(a.db, c)
 	})
 	// Get article by id
 	r.GET("/content", func(c *gin.Context) {
-		controller.GetArticle(db, c)
+		controller.GetArticle(a.db, c)
 	})
 	// Get article by user id
 	r.GET("/owned", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.ListOwnedArticles(db, c)
+		controller.ListOwnedArticles(a.db, c)
 	})
 	// Search owned article by title
 	r.GET("/owned/search", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.SearchOwnedArticles(db, c)
+		controller.SearchOwnedArticles(a.db, c)
 	})
 	// Search all article by title
 	r.GET("/search", func(c *gin.Context) {
-		controller.SearchAllArticles(db, c)
+		controller.SearchAllArticles(a.db, c)
 	})
 	// Create article
 	r.POST("/create", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.CreateArticle(db, c)
+		controller.CreateArticle(a.db, c)
 	})
 	// Update article
 	r.PATCH("/update", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.UpdateArticle(db, c)
+		controller.UpdateArticle(a.db, c)
 	})
 	// Delete article
 	r.DELETE("/delete", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.DeleteArticle(db, c)
+		controller.DeleteArticle(a.db, c)
 	})
 }
