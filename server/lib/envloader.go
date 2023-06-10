@@ -2,6 +2,7 @@ package lib
 
 import (
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -11,6 +12,7 @@ func EnvLoader() {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatal(err.Error())
 	}
+	log.Printf("Deployment mode is: %s", os.Getenv("DEPLOYMENT_MODE"))
 }
 
 func EnvLoaderTest() {

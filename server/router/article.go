@@ -33,6 +33,7 @@ func (a *ArticleSingleton) Init(db *gorm.DB, q *gin.Engine) {
 
 func (a *ArticleSingleton) SetupRoutes() {
 	r := a.q.Group("/article")
+	r.Static("/images", "./images")
 	// Get all articles
 	r.GET("", func(c *gin.Context) {
 		controller.ListAllArticles(a.db, c)

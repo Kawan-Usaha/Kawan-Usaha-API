@@ -23,7 +23,7 @@ func SetupRouter() *gin.Engine {
 		// DB
 		db := Database.Open()
 		if db != nil {
-			println("Nice, DB Connected")
+			log.Println("Nice, DB Connected")
 		}
 
 		// Gin Framework

@@ -82,7 +82,7 @@ func CreateCategory(db *gorm.DB, c *gin.Context) {
 	input.UpdatedAt = time.Now()
 
 	// Save the category in the database
-	if err := db.Create(&input).Error; err != nil {
+	if err := db.Where("LOWER(title) = ?", strings.ToLower(input.Title)).FirstOrCreate(&input).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to create category", err.Error()))
 		return
 	}

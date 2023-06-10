@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"encoding/json"
 	Model "kawan-usaha-api/model"
 	"kawan-usaha-api/server/lib"
+	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -95,6 +98,7 @@ func ListAllArticles(db *gorm.DB, c *gin.Context) {
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
+			"image":        v.Image,
 		}
 	}
 
@@ -123,6 +127,7 @@ func GetArticle(db *gorm.DB, c *gin.Context) {
 		"user":         article.User.Name,
 		"created_at":   article.CreatedAt,
 		"updated_at":   article.UpdatedAt,
+		"image":        article.Image,
 	}
 	c.JSON(200, lib.OkResponse("Success get article", response))
 }
@@ -165,6 +170,7 @@ func SearchOwnedArticles(db *gorm.DB, c *gin.Context) {
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
+			"image":        v.Image,
 		}
 	}
 
@@ -214,6 +220,7 @@ func SearchAllArticles(db *gorm.DB, c *gin.Context) {
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
+			"image":        v.Image,
 		})
 	}
 
@@ -234,10 +241,8 @@ func CreateArticle(db *gorm.DB, c *gin.Context) {
 		Article  Model.Article `json:"article"`
 		Category uint          `json:"category"`
 	}
-	if err := c.ShouldBindJSON(&requestData); err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to bind json", err.Error()))
-		return
-	}
+	article := c.PostForm("article")
+	json.Unmarshal([]byte(article), &requestData)
 
 	// Set the user ID
 	requestData.Article.UserID = subs
@@ -251,6 +256,23 @@ func CreateArticle(db *gorm.DB, c *gin.Context) {
 		return
 	}
 
+	image, _ := c.FormFile("image")
+	if image != nil {
+		var imagePath string
+		var err error
+		if os.Getenv("DEPLOYMENT_MODE") == "local" {
+			imagePath, err = lib.SaveImageOffline(image, "/article")
+		} else {
+			imagePath, err = lib.SaveImageOnline(image)
+		}
+		if err != nil {
+			c.JSON(500, lib.ErrorResponse("Failed to save image", err.Error()))
+			return
+		}
+		requestData.Article.Image = imagePath
+	} else {
+		requestData.Article.Image = ""
+	}
 	// Assign the category to the article
 	requestData.Article.Category = []Model.Category{category}
 
@@ -266,6 +288,7 @@ func CreateArticle(db *gorm.DB, c *gin.Context) {
 		"category":     requestData.Article.Category,
 		"created_at":   requestData.Article.CreatedAt,
 		"updated_at":   requestData.Article.UpdatedAt,
+		"image":        requestData.Article.Image,
 	}
 
 	c.JSON(200, lib.OkResponse("Success create article", result))
@@ -278,10 +301,8 @@ func UpdateArticle(db *gorm.DB, c *gin.Context) {
 		Article  Model.Article `json:"article"`
 		Category uint          `json:"category"`
 	}
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to bind json", err.Error()))
-		return
-	}
+	articlein := c.PostForm("article")
+	json.Unmarshal([]byte(articlein), &input)
 
 	var article Model.Article
 	if err := db.Where("id = ? AND user_id = ?", input.Article.ID, subs).First(&article).Error; err != nil {
@@ -292,9 +313,86 @@ func UpdateArticle(db *gorm.DB, c *gin.Context) {
 	// Update the article properties
 	article.Title = input.Article.Title
 	article.Content = input.Article.Content
-	article.Image = input.Article.Image
 	article.IsPublished = input.Article.IsPublished
 	article.UpdatedAt = time.Now()
+
+	updatedImage, _ := c.FormFile("image")
+	if updatedImage != nil {
+		// Calculate the MD5 hash of the updated image
+		updatedHash, err := lib.CalculateMD5Hash(updatedImage)
+		if err != nil {
+			c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the updated image", err.Error()))
+			return
+		}
+
+		var existingHash string
+		if article.Image != "" {
+			// Calculate the MD5 hash of the existing image
+			if os.Getenv("DEPLOYMENT_MODE") == "local" {
+				existingHash, err = lib.CalculateMD5HashFromOffline(article.Image)
+				if err != nil {
+					c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the existing image", err.Error()))
+					return
+				}
+			} else {
+				existingHash, err = lib.CalculateMD5HashFromURL(article.Image)
+				if err != nil {
+					c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the existing image", err.Error()))
+					return
+				}
+			}
+		} else {
+			existingHash = ""
+		}
+		// Compare the hashes to determine if the images are identical
+		if updatedHash != existingHash {
+			// Updated image is different, overwrite the existing image
+			var imagePath string
+			var err error
+			if os.Getenv("DEPLOYMENT_MODE") == "local" {
+				if article.Image != "" {
+					if err := lib.DeleteImageOffline(article.Image); err != nil {
+						c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+						return
+					}
+				}
+				imagePath, err = lib.SaveImageOffline(updatedImage, "/article")
+			} else {
+				if article.Image != "" {
+					if err := lib.DeleteImageOnline(article.Image); err != nil {
+						c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+						return
+					}
+				}
+				imagePath, err = lib.SaveImageOnline(updatedImage)
+			}
+			if err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to save image", err.Error()))
+				return
+			}
+			article.Image = imagePath
+			log.Println("Updated image")
+		} else {
+			log.Println("Image not updated")
+		}
+	} else {
+		if os.Getenv("DEPLOYMENT_MODE") == "local" {
+			if article.Image != "" {
+				if err := lib.DeleteImageOffline(article.Image); err != nil {
+					c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+					return
+				}
+			}
+		} else {
+			if article.Image != "" {
+				if err := lib.DeleteImageOnline(article.Image); err != nil {
+					c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+					return
+				}
+			}
+		}
+		article.Image = ""
+	}
 
 	// Find the category
 	var category Model.Category
@@ -320,6 +418,7 @@ func UpdateArticle(db *gorm.DB, c *gin.Context) {
 		"content":      article.Content,
 		"created_at":   article.CreatedAt,
 		"updated_at":   article.UpdatedAt,
+		"image":        article.Image,
 	}
 
 	c.JSON(200, lib.OkResponse("Success update article", result))
