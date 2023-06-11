@@ -424,10 +424,6 @@ func UpdateArticle(db *gorm.DB, c *gin.Context) {
 	c.JSON(200, lib.OkResponse("Success update article", result))
 }
 
-type deleteArticle struct {
-	ID int `json:"id"`
-}
-
 func DeleteArticle(db *gorm.DB, c *gin.Context) {
 	sub, _ := c.Get("sub")
 	subs := sub.(string)
