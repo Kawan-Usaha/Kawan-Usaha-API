@@ -452,5 +452,20 @@ func DeleteArticle(db *gorm.DB, c *gin.Context) {
 		c.JSON(400, lib.ErrorResponse("Failed to delete article", err.Error()))
 		return
 	}
+	if os.Getenv("DEPLOYMENT_MODE") == "local" {
+		if article.Image != "" {
+			if err := lib.DeleteImageOffline(article.Image); err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+				return
+			}
+		}
+	} else {
+		if article.Image != "" {
+			if err := lib.DeleteImageOnline(article.Image); err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+				return
+			}
+		}
+	}
 	c.JSON(200, lib.OkResponse("Success delete article", nil))
 }
