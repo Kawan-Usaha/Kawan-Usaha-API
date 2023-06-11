@@ -51,6 +51,7 @@ func ListOwnedArticles(db *gorm.DB, c *gin.Context) {
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
 			"user_id":      v.UserID,
+			"image":        v.Image,
 		}
 	}
 
