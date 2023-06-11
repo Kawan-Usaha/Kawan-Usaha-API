@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"encoding/json"
 	Model "kawan-usaha-api/model"
 	"kawan-usaha-api/server/lib"
+	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -74,15 +77,32 @@ func SearchCategoryByName(db *gorm.DB, c *gin.Context) {
 
 func CreateCategory(db *gorm.DB, c *gin.Context) {
 	var input Model.Category
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to create category", err.Error()))
-		return
-	}
+
+	request := c.PostForm("category")
+	json.Unmarshal([]byte(request), &input)
 	input.CreatedAt = time.Now()
 	input.UpdatedAt = time.Now()
 
+	image, _ := c.FormFile("image")
+	if image != nil {
+		var imagePath string
+		var err error
+		if os.Getenv("DEPLOYMENT_MODE") == "local" {
+			imagePath, err = lib.SaveImageOffline(image, "/article")
+		} else {
+			imagePath, err = lib.SaveImageOnline(image)
+		}
+		if err != nil {
+			c.JSON(500, lib.ErrorResponse("Failed to save image", err.Error()))
+			return
+		}
+		input.Image = imagePath
+	} else {
+		input.Image = ""
+	}
+
 	// Save the category in the database
-	if err := db.Create(&input).Error; err != nil {
+	if err := db.Where("LOWER(title) = ?", strings.ToLower(input.Title)).FirstOrCreate(&input).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to create category", err.Error()))
 		return
 	}
@@ -117,10 +137,9 @@ func CreateCategory(db *gorm.DB, c *gin.Context) {
 
 func UpdateCategory(db *gorm.DB, c *gin.Context) {
 	var input Model.Category
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to update category", err.Error()))
-		return
-	}
+
+	request := c.PostForm("category")
+	json.Unmarshal([]byte(request), &input)
 
 	// Retrieve the existing category from the database
 	var category Model.Category
@@ -131,8 +150,85 @@ func UpdateCategory(db *gorm.DB, c *gin.Context) {
 
 	// Update the category's properties based on the input JSON
 	category.Title = input.Title
-	category.Image = input.Image
 	category.UpdatedAt = time.Now()
+
+	updatedImage, _ := c.FormFile("image")
+	if updatedImage != nil {
+		// Calculate the MD5 hash of the updated image
+		updatedHash, err := lib.CalculateMD5Hash(updatedImage)
+		if err != nil {
+			c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the updated image", err.Error()))
+			return
+		}
+
+		var existingHash string
+		if category.Image != "" {
+			// Calculate the MD5 hash of the existing image
+			if os.Getenv("DEPLOYMENT_MODE") == "local" {
+				existingHash, err = lib.CalculateMD5HashFromOffline(category.Image)
+				if err != nil {
+					c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the existing image", err.Error()))
+					return
+				}
+			} else {
+				existingHash, err = lib.CalculateMD5HashFromURL(category.Image)
+				if err != nil {
+					c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the existing image", err.Error()))
+					return
+				}
+			}
+		} else {
+			existingHash = ""
+		}
+		// Compare the hashes to determine if the images are identical
+		if updatedHash != existingHash {
+			// Updated image is different, overwrite the existing image
+			var imagePath string
+			var err error
+			if os.Getenv("DEPLOYMENT_MODE") == "local" {
+				if category.Image != "" {
+					if err := lib.DeleteImageOffline(category.Image); err != nil {
+						c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+						return
+					}
+				}
+				imagePath, err = lib.SaveImageOffline(updatedImage, "/article")
+			} else {
+				if category.Image != "" {
+					if err := lib.DeleteImageOnline(category.Image); err != nil {
+						c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+						return
+					}
+				}
+				imagePath, err = lib.SaveImageOnline(updatedImage)
+			}
+			if err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to save image", err.Error()))
+				return
+			}
+			category.Image = imagePath
+			log.Println("Updated image")
+		} else {
+			log.Println("Image not updated")
+		}
+	} else {
+		if os.Getenv("DEPLOYMENT_MODE") == "local" {
+			if category.Image != "" {
+				if err := lib.DeleteImageOffline(category.Image); err != nil {
+					c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+					return
+				}
+			}
+		} else {
+			if category.Image != "" {
+				if err := lib.DeleteImageOnline(category.Image); err != nil {
+					c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+					return
+				}
+			}
+		}
+		category.Image = ""
+	}
 
 	// Clear the existing tags associated with the category
 	if err := db.Model(&category).Association("Tags").Clear(); err != nil {
@@ -156,19 +252,29 @@ func UpdateCategory(db *gorm.DB, c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, lib.OkResponse("Success update category", nil))
+	result := gin.H{
+		"id":         category.ID,
+		"title":      category.Title,
+		"created_at": category.CreatedAt,
+		"updated_at": category.UpdatedAt,
+		"image":      category.Image,
+		"tags":       category.Tags,
+	}
+
+	c.JSON(200, lib.OkResponse("Success update category", result))
 }
 
 func DeleteCategory(db *gorm.DB, c *gin.Context) {
-	var input Model.Category
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to delete category", err.Error()))
+	var del struct {
+		ID uint `json:"id"`
+	}
+	if err := c.ShouldBindJSON(&del); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to bind json", err.Error()))
 		return
 	}
-
 	// Retrieve the existing category from the database
 	var existingCategory Model.Category
-	if err := db.Where("id = ?", input.ID).Preload("Tags").First(&existingCategory).Error; err != nil {
+	if err := db.Where("id = ?", del.ID).Preload("Tags").First(&existingCategory).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get category", err.Error()))
 		return
 	}
@@ -183,6 +289,21 @@ func DeleteCategory(db *gorm.DB, c *gin.Context) {
 	if err := db.Delete(&existingCategory).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to delete category", err.Error()))
 		return
+	}
+	if os.Getenv("DEPLOYMENT_MODE") == "local" {
+		if existingCategory.Image != "" {
+			if err := lib.DeleteImageOffline(existingCategory.Image); err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+				return
+			}
+		}
+	} else {
+		if existingCategory.Image != "" {
+			if err := lib.DeleteImageOnline(existingCategory.Image); err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+				return
+			}
+		}
 	}
 
 	c.JSON(200, lib.OkResponse("Success delete category", nil))
