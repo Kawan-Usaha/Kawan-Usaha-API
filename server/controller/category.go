@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	Model "kawan-usaha-api/model"
 	"kawan-usaha-api/server/lib"
 	"os"
@@ -100,27 +101,33 @@ func CreateCategory(db *gorm.DB, c *gin.Context) {
 		input.Image = ""
 	}
 
-	// Save the category in the database
-	if err := db.Where("LOWER(title) = ?", strings.ToLower(input.Title)).FirstOrCreate(&input).Error; err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to create category", err.Error()))
-		return
+	// Tags and shiz
+	for i := range input.Tags {
+		tagName := strings.ToLower(input.Tags[i].Name)
+		var existingTag Model.Tag
+		err := db.Where("LOWER(name) = ?", tagName).First(&existingTag).Error
+		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+			newTag := Model.Tag{
+				Name:      tagName,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			if err := db.Create(&newTag).Error; err != nil {
+				c.JSON(400, lib.ErrorResponse("Failed to create tag", err.Error()))
+				return
+			}
+			input.Tags[i] = newTag
+		} else if err != nil {
+			c.JSON(400, lib.ErrorResponse("Failed to check existing tag", err.Error()))
+			return
+		} else {
+			input.Tags[i] = existingTag
+		}
 	}
 
-	tagsIDs := c.QueryArray("tags") // Assuming the tag IDs are provided as query parameters
-
-	// Associate tags with the created category
-	if len(tagsIDs) > 0 {
-		var tags []Model.Tag
-		if err := db.Find(&tags, tagsIDs).Error; err != nil {
-			c.JSON(400, lib.ErrorResponse("Failed to find tags", err.Error()))
-			return
-		}
-
-		// Update the association between category and tags
-		if err := db.Model(&input).Association("Tags").Append(&tags); err != nil {
-			c.JSON(400, lib.ErrorResponse("Failed to associate tags with category", err.Error()))
-			return
-		}
+	if err := db.Create(&input).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to create usaha", err.Error()))
+		return
 	}
 
 	result := gin.H{

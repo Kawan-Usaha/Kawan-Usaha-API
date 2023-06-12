@@ -54,6 +54,10 @@ func (a *ArticleSingleton) SetupRoutes() {
 	r.GET("/search", func(c *gin.Context) {
 		controller.SearchAllArticles(a.db, c)
 	})
+	// Search all article by title
+	r.GET("/category", func(c *gin.Context) {
+		controller.SearchArticlebyCategory(a.db, c)
+	})
 	// Create article
 	r.POST("/create", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.CreateArticle(a.db, c)
