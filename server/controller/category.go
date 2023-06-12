@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	Model "kawan-usaha-api/model"
 	"kawan-usaha-api/server/lib"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -153,81 +152,12 @@ func UpdateCategory(db *gorm.DB, c *gin.Context) {
 	category.UpdatedAt = time.Now()
 
 	updatedImage, _ := c.FormFile("image")
-	if updatedImage != nil {
-		// Calculate the MD5 hash of the updated image
-		updatedHash, err := lib.CalculateMD5Hash(updatedImage)
-		if err != nil {
-			c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the updated image", err.Error()))
-			return
-		}
+	var err error
+	category.Image, err = lib.Compare(updatedImage, category.Image, c.Request.Context())
 
-		var existingHash string
-		if category.Image != "" {
-			// Calculate the MD5 hash of the existing image
-			if os.Getenv("DEPLOYMENT_MODE") == "local" {
-				existingHash, err = lib.CalculateMD5HashFromOffline(category.Image)
-				if err != nil {
-					c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the existing image", err.Error()))
-					return
-				}
-			} else {
-				existingHash, err = lib.CalculateMD5HashFromURL(category.Image)
-				if err != nil {
-					c.JSON(500, lib.ErrorResponse("Failed to calculate hash for the existing image", err.Error()))
-					return
-				}
-			}
-		} else {
-			existingHash = ""
-		}
-		// Compare the hashes to determine if the images are identical
-		if updatedHash != existingHash {
-			// Updated image is different, overwrite the existing image
-			var imagePath string
-			var err error
-			if os.Getenv("DEPLOYMENT_MODE") == "local" {
-				if category.Image != "" {
-					if err := lib.DeleteImageOffline(category.Image); err != nil {
-						c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
-						return
-					}
-				}
-				imagePath, err = lib.SaveImageOffline(updatedImage, "/article")
-			} else {
-				if category.Image != "" {
-					if err := lib.DeleteImageOnline(category.Image); err != nil {
-						c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
-						return
-					}
-				}
-				imagePath, err = lib.SaveImageOnline(updatedImage)
-			}
-			if err != nil {
-				c.JSON(500, lib.ErrorResponse("Failed to save image", err.Error()))
-				return
-			}
-			category.Image = imagePath
-			log.Println("Updated image")
-		} else {
-			log.Println("Image not updated")
-		}
-	} else {
-		if os.Getenv("DEPLOYMENT_MODE") == "local" {
-			if category.Image != "" {
-				if err := lib.DeleteImageOffline(category.Image); err != nil {
-					c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
-					return
-				}
-			}
-		} else {
-			if category.Image != "" {
-				if err := lib.DeleteImageOnline(category.Image); err != nil {
-					c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
-					return
-				}
-			}
-		}
-		category.Image = ""
+	if err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
+		return
 	}
 
 	// Clear the existing tags associated with the category

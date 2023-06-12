@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -37,7 +36,6 @@ func CalculateMD5HashFromURL(url string) (string, error) {
 
 	// Calculate the MD5 hash of the downloaded file
 	hash := md5.New()
-	log.Println(resp.Body)
 	if _, err := io.Copy(hash, resp.Body); err != nil {
 		return "", err
 	}
@@ -53,7 +51,6 @@ func CalculateMD5HashFromOffline(file string) (string, error) {
 	defer f.Close()
 
 	hash := md5.New()
-	log.Println(f)
 	if _, err := io.Copy(hash, f); err != nil {
 		return "", err
 	}
