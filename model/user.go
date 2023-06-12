@@ -26,6 +26,7 @@ type User struct {
 	Verified     bool         `gorm:"notNull;default:false" json:"verified"`
 	Verification Verification `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"verification"`
 	RoleId       uint         `gorm:"notNull;default:0" json:"role_id"`
+	Image        string       `gorm:"null;size:255" json:"image"`
 	CreatedAt    time.Time    `json:"created_at"`
 	UpdatedAt    time.Time    `json:"updated_at"`
 }
