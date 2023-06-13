@@ -86,6 +86,10 @@ func SetupRouter() *gin.Engine {
 		categoryInstance := router.GetCategoryInstance()
 		categoryInstance.Init(db, r)
 		categoryInstance.SetupRoutes()
+
+		chatInstance := router.GetChatInstance()
+		chatInstance.Init(db, r)
+		chatInstance.SetupRoutes()
 	})
 	return r
 }
