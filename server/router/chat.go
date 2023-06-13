@@ -36,7 +36,7 @@ func (chat *ChatSingleton) SetupRoutes() {
 	r.POST("/chat/completions", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.GetCompletions(chat.db, c)
 	})
-	r.GET("/token_check", lib.ValidateJWTToken(), func(c *gin.Context) {
+	r.POST("/token_check", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.TokenCheck(chat.db, c)
 	})
 	r.GET("/models", lib.ValidateJWTToken(), func(c *gin.Context) {

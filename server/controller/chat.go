@@ -75,7 +75,6 @@ func GetCompletions(db *gorm.DB, c *gin.Context) {
 				// Write the chunk of data to the response writer
 				c.Writer.Write(buf[:n])
 				c.Writer.Flush()
-				// c.JSON(http.StatusOK, buf[:n])
 			}
 		}
 	} else {
@@ -96,9 +95,41 @@ func GetCompletions(db *gorm.DB, c *gin.Context) {
 }
 
 func TokenCheck(db *gorm.DB, c *gin.Context) {
+	resp, err := http.Post(os.Getenv("LLM_URL")+"/v1/token_check", "application/json", c.Request.Body)
+	if err != nil {
+		// Handle error
+		c.JSON(http.StatusInternalServerError, lib.ErrorResponse("Failed to communicate with the chat service.", err.Error()))
+		return
+	}
+	defer resp.Body.Close()
 
+	respData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		// Handle error
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to read the chat service response.",
+		})
+		return
+	}
+	c.Data(http.StatusOK, resp.Header.Get("Content-Type"), respData)
 }
 
 func GetModels(db *gorm.DB, c *gin.Context) {
+	resp, err := http.Get(os.Getenv("LLM_URL") + "/v1/models")
+	if err != nil {
+		// Handle error
+		c.JSON(http.StatusInternalServerError, lib.ErrorResponse("Failed to communicate with the chat service.", err.Error()))
+		return
+	}
+	defer resp.Body.Close()
 
+	respData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		// Handle error
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to read the chat service response.",
+		})
+		return
+	}
+	c.Data(http.StatusOK, resp.Header.Get("Content-Type"), respData)
 }
