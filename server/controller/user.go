@@ -96,7 +96,7 @@ func GetFavoriteArticles(db *gorm.DB, c *gin.Context) {
 			"id":          article.ID,
 			"title":       article.Title,
 			"image":       article.Image,
-			"isGenerated": article.IsGenerated,
+			"isPublished": article.IsPublished,
 			"createdAt":   article.CreatedAt,
 			"updatedAt":   article.UpdatedAt,
 		})
