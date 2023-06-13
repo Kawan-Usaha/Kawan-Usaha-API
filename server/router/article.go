@@ -42,6 +42,9 @@ func (a *ArticleSingleton) SetupRoutes() {
 	r.GET("/content", func(c *gin.Context) {
 		controller.GetArticle(a.db, c)
 	})
+	r.POST("/favorite", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.AddToFavorites(a.db, c)
+	})
 	// Get article by user id
 	r.GET("/owned", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.ListOwnedArticles(a.db, c)
