@@ -40,7 +40,7 @@ func Register(db *gorm.DB, c *gin.Context) {
 		c.JSON(400, lib.ErrorResponse("Failed to register", err.Error()))
 		return
 	}
-	EmailVerificationCodeFromRegister(db, c, regist)
+	verification := EmailVerificationCodeFromRegister(db, c, regist)
 
 	hours, _ := strconv.Atoi(os.Getenv("TOKEN_TTL"))
 	token, err := lib.GenerateJWTToken(time.Duration(hours)*time.Hour, regist.UserId)
@@ -50,9 +50,10 @@ func Register(db *gorm.DB, c *gin.Context) {
 	}
 
 	result := gin.H{
-		"token": token,
-		"name":  regist.Name,
-		"email": regist.Email,
+		"token":        token,
+		"name":         regist.Name,
+		"email":        regist.Email,
+		"verification": verification,
 	}
 
 	c.JSON(200, lib.OkResponse("Register success, please login then validate your email address", result))

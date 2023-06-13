@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func EmailVerificationCodeFromRegister(db *gorm.DB, c *gin.Context, user Model.User) {
+func EmailVerificationCodeFromRegister(db *gorm.DB, c *gin.Context, user Model.User) string {
 	words := strings.Split(user.Name, " ")
 	code := lib.GenerateEmailCode()
 	emaildata := lib.EmailData{
@@ -26,10 +26,10 @@ func EmailVerificationCodeFromRegister(db *gorm.DB, c *gin.Context, user Model.U
 	}
 	if err := db.Create(&verification).Error; err != nil {
 		c.JSON(500, lib.ErrorResponse("Failed to create verification", err.Error()))
-		return
+		return ""
 	}
 	lib.SendMailSingleReceiver(user.Email, &emaildata, lib.Templates["email_verification"])
-	c.JSON(200, lib.OkResponse("Email verification sent", nil))
+	return "Email verification sent"
 }
 
 func EmailVerificationCodeFromProfile(db *gorm.DB, c *gin.Context) {
