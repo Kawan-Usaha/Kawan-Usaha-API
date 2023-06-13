@@ -43,4 +43,8 @@ func (u *UserSingleton) SetupRoutes() {
 	r.PATCH("/profile", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.UpdateUserProfile(u.db, c)
 	})
+	// Get favorite articles
+	r.GET("/favorite-articles", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.GetFavoriteArticles(u.db, c)
+	})
 }

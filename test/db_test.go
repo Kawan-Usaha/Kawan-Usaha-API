@@ -77,12 +77,12 @@ func TestDb(t *testing.T) {
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-	if err := db.Model(&newUser).Association("Article").Append(&newArticle); err != nil {
+	newArticle.Category = newCategory
+	newArticle.User = newUser
+	if err := db.Create(&newArticle).Error; err != nil {
 		log.Fatal(err.Error())
 	}
-	if err := db.Model(&newCategory).Association("Articles").Append(&newArticle); err != nil {
-		log.Fatal(err.Error())
-	}
+
 	searchArticle := Model.Article{}
 	if err := db.Where("title = ?", "HelloTitle").First(&searchArticle).Error; err != nil {
 		log.Fatal(err.Error())
