@@ -73,7 +73,7 @@ func TestDb(t *testing.T) {
 		Title:       "HelloTitle",
 		Content:     "HelloContent",
 		Image:       "HelloImage",
-		IsGenerated: false,
+		IsPublished: true,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}

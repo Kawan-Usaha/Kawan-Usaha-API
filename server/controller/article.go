@@ -45,7 +45,7 @@ func ListOwnedArticles(db *gorm.DB, c *gin.Context) {
 		result[i] = gin.H{
 			"id":           v.ID,
 			"title":        v.Title,
-			"is_generated": v.IsGenerated,
+			"is_published": v.IsPublished,
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
@@ -94,7 +94,7 @@ func ListAllArticles(db *gorm.DB, c *gin.Context) {
 		result[i] = gin.H{
 			"id":           v.ID,
 			"title":        v.Title,
-			"is_generated": v.IsGenerated,
+			"is_published": v.IsPublished,
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
@@ -122,7 +122,7 @@ func GetArticle(db *gorm.DB, c *gin.Context) {
 		"id":           article.ID,
 		"title":        article.Title,
 		"content":      article.Content,
-		"is_generated": article.IsGenerated,
+		"is_published": article.IsPublished,
 		"category":     article.Category,
 		"user":         article.User.Name,
 		"created_at":   article.CreatedAt,
@@ -166,7 +166,7 @@ func AddToFavorites(db *gorm.DB, c *gin.Context) {
 		"id":           article.ID,
 		"title":        article.Title,
 		"content":      article.Content,
-		"is_generated": article.IsGenerated,
+		"is_published": article.IsPublished,
 		"category":     article.Category,
 		"user":         article.User.Name,
 		"created_at":   article.CreatedAt,
@@ -211,7 +211,7 @@ func SearchOwnedArticles(db *gorm.DB, c *gin.Context) {
 		result[i] = gin.H{
 			"id":           v.ID,
 			"title":        v.Title,
-			"is_generated": v.IsGenerated,
+			"is_published": v.IsPublished,
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
@@ -261,7 +261,7 @@ func SearchAllArticles(db *gorm.DB, c *gin.Context) {
 		result = append(result, gin.H{
 			"id":           v.ID,
 			"title":        v.Title,
-			"is_generated": v.IsGenerated,
+			"is_published": v.IsPublished,
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
@@ -316,7 +316,7 @@ func SearchArticlebyCategory(db *gorm.DB, c *gin.Context) {
 		result = append(result, gin.H{
 			"id":           v.ID,
 			"title":        v.Title,
-			"is_generated": v.IsGenerated,
+			"is_published": v.IsPublished,
 			"category":     v.Category,
 			"created_at":   v.CreatedAt,
 			"updated_at":   v.UpdatedAt,
@@ -384,7 +384,7 @@ func CreateArticle(db *gorm.DB, c *gin.Context) {
 	result := gin.H{
 		"id":           requestData.Article.ID,
 		"title":        requestData.Article.Title,
-		"is_generated": requestData.Article.IsGenerated,
+		"is_published": requestData.Article.IsPublished,
 		"category":     requestData.Article.Category,
 		"created_at":   requestData.Article.CreatedAt,
 		"updated_at":   requestData.Article.UpdatedAt,
@@ -413,7 +413,7 @@ func UpdateArticle(db *gorm.DB, c *gin.Context) {
 	// Update the article properties
 	article.Title = input.Article.Title
 	article.Content = input.Article.Content
-	article.IsGenerated = input.Article.IsGenerated
+	article.IsPublished = input.Article.IsPublished
 	article.UpdatedAt = time.Now()
 
 	updatedImage, _ := c.FormFile("image")
@@ -444,7 +444,7 @@ func UpdateArticle(db *gorm.DB, c *gin.Context) {
 		"id":           article.ID,
 		"user_id":      article.UserID,
 		"title":        article.Title,
-		"is_generated": article.IsGenerated,
+		"is_published": article.IsPublished,
 		"category":     article.Category,
 		"content":      article.Content,
 		"created_at":   article.CreatedAt,
