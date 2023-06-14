@@ -525,6 +525,17 @@ func DeleteArticle(db *gorm.DB, c *gin.Context) {
 		return
 	}
 
+	var user Model.User
+	if err := db.Where("user_id = ?", subs).First(&user).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get user", err.Error()))
+		return
+	}
+
+	if err := db.Model(&user).Association("FavoriteArticles").Delete(&article); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to remove from favorite articles", err.Error()))
+		return
+	}
+
 	// Clear the article's associations with categories and users
 	db.Model(&article).Association("Category").Clear()
 	db.Model(&article).Association("User").Clear()
