@@ -33,8 +33,8 @@ type User struct {
 }
 
 type UserFavoriteArticle struct {
-	UserID    string
-	ArticleID uint
+	UserID    string `gorm:"onDelete:CASCADE"`
+	ArticleID uint   `gorm:"onDelete:CASCADE"`
 }
 
 type ChangePassword struct {
