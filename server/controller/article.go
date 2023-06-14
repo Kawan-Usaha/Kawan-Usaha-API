@@ -114,9 +114,17 @@ func ListAllArticles(db *gorm.DB, c *gin.Context) {
 
 func GetArticle(db *gorm.DB, c *gin.Context) {
 	var article Model.Article
-	if err := db.Where("id = ?", c.Query("id")).Preload("User").Preload("Category").First(&article).Error; err != nil {
+	if err := db.Where("id = ?", c.Query("id")).Preload("User").Preload("Category").Preload("User.FavoriteArticles").First(&article).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
+	}
+	isFavorite := false
+	for _, favoriteArticle := range article.User.FavoriteArticles {
+		print(favoriteArticle.ID)
+		if favoriteArticle.ID == article.ID {
+			isFavorite = true
+			break
+		}
 	}
 	response := gin.H{
 		"id":           article.ID,
@@ -128,6 +136,7 @@ func GetArticle(db *gorm.DB, c *gin.Context) {
 		"created_at":   article.CreatedAt,
 		"updated_at":   article.UpdatedAt,
 		"image":        article.Image,
+		"favorite":     isFavorite,
 	}
 	c.JSON(200, lib.OkResponse("Success get article", response))
 }
@@ -175,6 +184,51 @@ func AddToFavorites(db *gorm.DB, c *gin.Context) {
 	}
 
 	c.JSON(200, lib.OkResponse("Success add to favorite articles", response))
+}
+
+func RemoveFromFavorites(db *gorm.DB, c *gin.Context) {
+	sub, _ := c.Get("sub")
+	subs := sub.(string)
+
+	var input struct {
+		ArticleID uint `json:"id"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to bind JSON", err.Error()))
+		return
+	}
+
+	var article Model.Article
+	if err := db.First(&article, input.ArticleID).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
+		return
+	}
+
+	var user Model.User
+	if err := db.Where("user_id = ?", subs).First(&user).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get user", err.Error()))
+		return
+	}
+
+	if err := db.Model(&user).Association("FavoriteArticles").Delete(&article); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to remove from favorite articles", err.Error()))
+		return
+	}
+
+	response := gin.H{
+		"id":           article.ID,
+		"title":        article.Title,
+		"content":      article.Content,
+		"is_published": article.IsPublished,
+		"category":     article.Category,
+		"user":         article.User.Name,
+		"created_at":   article.CreatedAt,
+		"updated_at":   article.UpdatedAt,
+		"image":        article.Image,
+	}
+
+	c.JSON(200, lib.OkResponse("Success remove from favorite articles", response))
 }
 
 func SearchOwnedArticles(db *gorm.DB, c *gin.Context) {

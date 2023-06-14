@@ -90,6 +90,10 @@ func SetupRouter() *gin.Engine {
 		chatInstance := router.GetChatInstance()
 		chatInstance.Init(db, r)
 		chatInstance.SetupRoutes()
+
+		tagInstance := router.GetTagInstance()
+		tagInstance.Init(db, r)
+		tagInstance.SetupRoutes()
 	})
 	return r
 }
