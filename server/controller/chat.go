@@ -7,7 +7,6 @@ import (
 	"kawan-usaha-api/server/lib"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -46,36 +45,22 @@ func GetCompletions(db *gorm.DB, c *gin.Context) {
 		c.Header("Content-Type", "text/event-stream")
 		c.Header("Cache-Control", "no-cache")
 
-		flusher, ok := c.Writer.(http.Flusher)
-		if !ok {
-			c.JSON(http.StatusInternalServerError, lib.ErrorResponse("Streaming is not supported.", nil))
-			return
-		}
-
-		// Set up a ticker to periodically flush the response writer
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-
 		// Stream the response data to the client
 		for {
-			select {
-			case <-ticker.C:
-				// Flush the response writer
-				flusher.Flush()
-			default:
-				// Read a chunk of data from the response body
-				// and write it to the response writer
-				buf := make([]byte, 4096)
-				n, err := resp.Body.Read(buf)
-				if err != nil {
-					// Handle error or end of response
-					return
-				}
-
-				// Write the chunk of data to the response writer
+			// Read a chunk of data from the response body
+			// and write it to the response writer
+			buf := make([]byte, 4096)
+			n, err := resp.Body.Read(buf)
+			if err != nil {
+				// Handle error or end of response
 				c.Writer.Write(buf[:n])
 				c.Writer.Flush()
+				return
 			}
+
+			// Write the chunk of data to the response writer
+			c.Writer.Write(buf[:n])
+			c.Writer.Flush()
 		}
 	} else {
 		// If stream=false, wait until the response is complete
