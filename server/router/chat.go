@@ -45,4 +45,7 @@ func (chat *ChatSingleton) SetupRoutes() {
 	r.POST("/generate-article", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.GenerateArticle(chat.db, c)
 	})
+	r.POST("/completions", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.ContinueCompletions(chat.db, c)
+	})
 }
