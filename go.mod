@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.30.1
 	cloud.google.com/go/translate v1.8.0
 	golang.org/x/oauth2 v0.9.0
-	google.golang.org/api v0.127.0
+	google.golang.org/api v0.128.0
 )
 
 require (
