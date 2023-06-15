@@ -77,14 +77,14 @@ func ListAllArticles(db *gorm.DB, c *gin.Context) {
 	}
 
 	var totalArticles int64
-	if err := db.Model(&Model.Article{}).Count(&totalArticles).Error; err != nil {
+	if err := db.Model(&Model.Article{}).Where("is_published = true").Count(&totalArticles).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
 	}
 
 	var articles []Model.Article
 	offset := (page - 1) * pageSize
-	if err := db.Preload("Category").Offset(offset).Limit(pageSize).Order("updated_at desc").Find(&articles).Error; err != nil {
+	if err := db.Preload("Category").Offset(offset).Limit(pageSize).Order("updated_at desc").Find(&articles).Where("is_published = true").Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
 		return
 	}

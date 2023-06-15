@@ -42,4 +42,7 @@ func (chat *ChatSingleton) SetupRoutes() {
 	r.GET("/models", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.GetModels(chat.db, c)
 	})
+	r.POST("/generate-article", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.GenerateArticle(chat.db, c)
+	})
 }
