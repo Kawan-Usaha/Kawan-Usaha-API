@@ -49,12 +49,16 @@ func UpdateUserProfile(db *gorm.DB, c *gin.Context) {
 	}
 
 	updatedImage, _ := c.FormFile("image")
-	var err error
-	input.Image, err = lib.Compare(updatedImage, user.Image, c.Request.Context())
 
-	if err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
-		return
+	is_updated := c.PostForm("image_changed")
+	if is_updated == "true" {
+		var err error
+		user.Image, err = lib.Compare(updatedImage, user.Image, c.Request.Context())
+
+		if err != nil {
+			c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
+			return
+		}
 	}
 
 	if user.Email != input.Email {
@@ -62,7 +66,6 @@ func UpdateUserProfile(db *gorm.DB, c *gin.Context) {
 		user.Email = input.Email
 	}
 	user.Name = input.Name
-	user.Image = input.Image
 
 	if err := db.Save(&user).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
