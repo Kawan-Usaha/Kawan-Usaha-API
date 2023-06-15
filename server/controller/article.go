@@ -295,13 +295,13 @@ func SearchAllArticles(db *gorm.DB, c *gin.Context) {
 	}
 
 	var total int64
-	if err := db.Preload("Category").Model(&Model.Article{}).Where("LOWER(title) LIKE ?", "%"+c.Query("title")+"%").Count(&total).Error; err != nil {
+	if err := db.Preload("Category").Model(&Model.Article{}).Where("LOWER(title) LIKE ?", "%"+c.Query("title")+"%").Where("is_published = true").Count(&total).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to count articles", err.Error()))
 		return
 	}
 
 	var articles []Model.Article
-	if err := db.Preload("Category").Where("LOWER(title) LIKE ?", "%"+c.Query("title")+"%").
+	if err := db.Preload("Category").Where("LOWER(title) LIKE ?", "%"+c.Query("title")+"%").Where("is_published = true").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Order("updated_at desc"). // Sort by updated_at field in descending order
@@ -349,6 +349,7 @@ func SearchArticlebyCategory(db *gorm.DB, c *gin.Context) {
 	var total int64
 	if err := db.Model(&Model.Article{}).
 		Where("category_id = ?", categoryID).
+		Where("is_published = true").
 		Count(&total).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to count articles", err.Error()))
 		return
@@ -357,6 +358,64 @@ func SearchArticlebyCategory(db *gorm.DB, c *gin.Context) {
 	var articles []Model.Article
 	if err := db.Preload("Category").
 		Where("category_id = ?", categoryID).
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Order("updated_at desc").
+		Where("is_published = true").
+		Find(&articles).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get articles", err.Error()))
+		return
+	}
+
+	result := make([]gin.H, 0)
+	for _, v := range articles {
+		result = append(result, gin.H{
+			"id":           v.ID,
+			"title":        v.Title,
+			"is_published": v.IsPublished,
+			"category":     v.Category,
+			"created_at":   v.CreatedAt,
+			"updated_at":   v.UpdatedAt,
+			"image":        v.Image,
+		})
+	}
+
+	response := gin.H{
+		"page":      page,
+		"page_size": pageSize,
+		"total":     total,
+		"articles":  result,
+	}
+
+	c.JSON(200, lib.OkResponse("Success get articles", response))
+}
+
+func SearchOwnedArticlebyCategory(db *gorm.DB, c *gin.Context) {
+	sub, _ := c.Get("sub")
+	subs := sub.(string)
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.Query("page_size"))
+	if err != nil {
+		pageSize = 10
+	}
+
+	categoryID, _ := strconv.Atoi(c.Query("category"))
+	print(categoryID)
+	var total int64
+	if err := db.Model(&Model.Article{}).
+		Where("category_id = ? AND user_id = ?", categoryID, subs).
+		Count(&total).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to count articles", err.Error()))
+		return
+	}
+
+	var articles []Model.Article
+	if err := db.Preload("Category").
+		Where("category_id = ? AND user_id = ?", categoryID, subs).
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Order("updated_at desc").
@@ -560,4 +619,94 @@ func DeleteArticle(db *gorm.DB, c *gin.Context) {
 		}
 	}
 	c.JSON(200, lib.OkResponse("Success delete article", nil))
+}
+
+func PublishArticle(db *gorm.DB, c *gin.Context) {
+	sub, _ := c.Get("sub")
+	subs := sub.(string)
+
+	var input struct {
+		ArticleID uint `json:"id"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to bind JSON", err.Error()))
+		return
+	}
+
+	var article Model.Article
+	if err := db.First(&article, input.ArticleID).Preload("Category").Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
+		return
+	}
+
+	if article.UserID != subs {
+		c.JSON(400, lib.ErrorResponse("Failed to publish article", "You are not the owner of this article"))
+		return
+	}
+
+	article.IsPublished = true
+	article.UpdatedAt = time.Now()
+
+	if err := db.Save(&article).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to publish article", err.Error()))
+		return
+	}
+
+	result := gin.H{
+		"id":           article.ID,
+		"title":        article.Title,
+		"is_published": article.IsPublished,
+		"category":     article.Category,
+		"created_at":   article.CreatedAt,
+		"updated_at":   article.UpdatedAt,
+		"image":        article.Image,
+	}
+
+	c.JSON(200, lib.OkResponse("Success publish article", result))
+}
+
+func UnpublishArticle(db *gorm.DB, c *gin.Context) {
+	sub, _ := c.Get("sub")
+	subs := sub.(string)
+
+	var input struct {
+		ArticleID uint `json:"id"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to bind JSON", err.Error()))
+		return
+	}
+
+	var article Model.Article
+	if err := db.First(&article, input.ArticleID).Preload("Category").Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to get article", err.Error()))
+		return
+	}
+
+	if article.UserID != subs {
+		c.JSON(400, lib.ErrorResponse("Failed to unpublish article", "You are not the owner of this article"))
+		return
+	}
+
+	article.IsPublished = false
+	article.UpdatedAt = time.Now()
+
+	if err := db.Save(&article).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to unpublish article", err.Error()))
+		return
+	}
+
+	result := gin.H{
+		"id":           article.ID,
+		"title":        article.Title,
+		"is_published": article.IsPublished,
+		"category":     article.Category,
+		"created_at":   article.CreatedAt,
+		"updated_at":   article.UpdatedAt,
+		"image":        article.Image,
+	}
+
+	c.JSON(200, lib.OkResponse("Success unpublish article", result))
 }
