@@ -58,6 +58,10 @@ func (a *ArticleSingleton) SetupRoutes() {
 	r.GET("/owned/search", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.SearchOwnedArticles(a.db, c)
 	})
+	// Search owned article by category
+	r.GET("/owned/search/category", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.SearchOwnedArticlebyCategory(a.db, c)
+	})
 	// Search all article by title
 	r.GET("/search", func(c *gin.Context) {
 		controller.SearchAllArticles(a.db, c)
@@ -73,6 +77,12 @@ func (a *ArticleSingleton) SetupRoutes() {
 	// Update article
 	r.PATCH("/update", lib.ValidateJWTToken(), func(c *gin.Context) {
 		controller.UpdateArticle(a.db, c)
+	})
+	r.PATCH("/publish", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.PublishArticle(a.db, c)
+	})
+	r.PATCH("/unpublish", lib.ValidateJWTToken(), func(c *gin.Context) {
+		controller.UnpublishArticle(a.db, c)
 	})
 	// Delete article
 	r.DELETE("/delete", lib.ValidateJWTToken(), func(c *gin.Context) {
