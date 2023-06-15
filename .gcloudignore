@@ -1,3 +1,5 @@
 # Exclude images on /images
 images/*
 !images/.gitkeep
+.git
+.github

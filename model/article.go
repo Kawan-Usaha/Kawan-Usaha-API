@@ -19,7 +19,7 @@ type Article struct {
 	Title       string    `gorm:"notNull;size:255" json:"title"`
 	Content     string    `gorm:"type:text;null" json:"content"`
 	Image       string    `gorm:"null;size:255" json:"image"`
-	IsPublished bool      `gorm:"default:true;notNull" json:"is_published"`
+	IsPublished bool      `gorm:"notNull" json:"is_published"`
 	CategoryID  uint      `gorm:"null;size:255;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"category_id"`
 	Category    Category  `gorm:"foreignKey:CategoryID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"category"`
 	CreatedAt   time.Time `json:"created_at"`
