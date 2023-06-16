@@ -59,6 +59,5 @@ func GCallback(c *gin.Context) string {
 	if err != nil {
 		log.Panic("JSON parse error: ", err)
 	}
-	println(prettyJSON.String())
 	return prettyJSON.String()
 }

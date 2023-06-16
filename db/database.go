@@ -41,9 +41,8 @@ func Open() *gorm.DB {
 		&Model.Usaha{},
 		&Model.Article{},
 		&Model.Category{},
-		&Model.Chat{},
-		&Model.Message{},
 		&Model.Tag{},
+		&Model.UserFavoriteArticle{},
 		&Model.Verification{}); err != nil {
 
 		log.Fatal(err.Error())

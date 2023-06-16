@@ -77,12 +77,12 @@ func TestDb(t *testing.T) {
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-	if err := db.Model(&newUser).Association("Article").Append(&newArticle); err != nil {
+	newArticle.Category = newCategory
+	newArticle.User = newUser
+	if err := db.Create(&newArticle).Error; err != nil {
 		log.Fatal(err.Error())
 	}
-	if err := db.Model(&newCategory).Association("Articles").Append(&newArticle); err != nil {
-		log.Fatal(err.Error())
-	}
+
 	searchArticle := Model.Article{}
 	if err := db.Where("title = ?", "HelloTitle").First(&searchArticle).Error; err != nil {
 		log.Fatal(err.Error())
@@ -104,37 +104,6 @@ func TestDb(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 	assert.Equal(t, "HelloTag", searchTag.Name)
-
-	// Test Chat
-	newChat := Model.Chat{
-		ChatId:    "1234567890",
-		UserID:    "1234567890",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-	if err := db.Model(&newUser).Association("Chat").Append(&newChat); err != nil {
-		log.Fatal(err.Error())
-	}
-	searchChat := Model.Chat{}
-	if err := db.Where("chat_id = ?", "1234567890").First(&searchChat).Error; err != nil {
-		log.Fatal(err.Error())
-	}
-	assert.Equal(t, "1234567890", searchChat.ChatId)
-
-	// Test Message
-	newMessage := Model.Message{
-		ChatId:    "1234567890",
-		Message:   "HelloMessage",
-		CreatedAt: time.Now(),
-	}
-	if err := db.Model(&newChat).Association("Messages").Append(&newMessage); err != nil {
-		log.Fatal(err.Error())
-	}
-	searchMessage := Model.Message{}
-	if err := db.Where("message = ?", "HelloMessage").First(&searchMessage).Error; err != nil {
-		log.Fatal(err.Error())
-	}
-	assert.Equal(t, "HelloMessage", searchMessage.Message)
 
 	// Test Verification
 	newVerification := Model.Verification{
@@ -164,6 +133,4 @@ func TestDb(t *testing.T) {
 	db.Delete(&Model.Category{}, "id = ?", uint(1))
 	db.Delete(&Model.Usaha{}, "id = ?", uint(1))
 	db.Delete(&Model.User{}, "user_id = ?", "59d729af-f5a6-4e6c-9eac-027ed3fc11e0")
-	db.Delete(&Model.Chat{}, "chat_id = ?", "1234567890")
-	db.Delete(&Model.Message{}, "message = ?", "HelloMessage")
 }

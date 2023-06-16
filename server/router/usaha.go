@@ -3,30 +3,53 @@ package router
 import (
 	"kawan-usaha-api/server/controller"
 	"kawan-usaha-api/server/lib"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func Usaha(db *gorm.DB, q *gin.Engine) {
-	r := q.Group("/usaha")
+var (
+	onceUsaha     sync.Once
+	usahaInstance *UsahaSingleton
+)
+
+type UsahaSingleton struct {
+	db *gorm.DB
+	q  *gin.Engine
+}
+
+func GetUsahaInstance() *UsahaSingleton {
+	onceUsaha.Do(func() {
+		usahaInstance = &UsahaSingleton{}
+	})
+	return usahaInstance
+}
+
+func (u *UsahaSingleton) Init(db *gorm.DB, q *gin.Engine) {
+	u.db = db
+	u.q = q
+}
+
+func (u *UsahaSingleton) SetupRoutes() {
+	r := u.q.Group("/usaha")
 
 	r.GET("/list", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.ListOwnedUsaha(db, c)
+		controller.ListOwnedUsaha(u.db, c)
 	})
 	r.GET("/search", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.SearchOwnedUsahaByTitle(db, c)
+		controller.SearchOwnedUsahaByTitle(u.db, c)
 	})
 	r.GET("/detail", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.GetOwnedUsahaByID(db, c)
+		controller.GetOwnedUsahaByID(u.db, c)
 	})
 	r.POST("/create", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.CreateUsaha(db, c)
+		controller.CreateUsaha(u.db, c)
 	})
 	r.PATCH("/update", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.UpdateUsaha(db, c)
+		controller.UpdateUsaha(u.db, c)
 	})
 	r.DELETE("/delete", lib.ValidateJWTToken(), func(c *gin.Context) {
-		controller.DeleteUsaha(db, c)
+		controller.DeleteUsaha(u.db, c)
 	})
 }

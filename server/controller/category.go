@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"encoding/json"
+	"errors"
 	Model "kawan-usaha-api/model"
 	"kawan-usaha-api/server/lib"
+	"os"
 	"strings"
 	"time"
 
@@ -74,34 +77,57 @@ func SearchCategoryByName(db *gorm.DB, c *gin.Context) {
 
 func CreateCategory(db *gorm.DB, c *gin.Context) {
 	var input Model.Category
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to create category", err.Error()))
-		return
-	}
+
+	request := c.PostForm("category")
+	json.Unmarshal([]byte(request), &input)
 	input.CreatedAt = time.Now()
 	input.UpdatedAt = time.Now()
 
-	// Save the category in the database
-	if err := db.Create(&input).Error; err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to create category", err.Error()))
-		return
+	image, _ := c.FormFile("image")
+	if image != nil {
+		var imagePath string
+		var err error
+		if os.Getenv("DEPLOYMENT_MODE") == "local" {
+			imagePath, err = lib.SaveImageOffline(image, "/article")
+		} else {
+			imagePath, err = lib.SaveImageOnline(image)
+		}
+		if err != nil {
+			c.JSON(500, lib.ErrorResponse("Failed to save image", err.Error()))
+			return
+		}
+		input.Image = imagePath
+	} else {
+		input.Image = ""
 	}
 
-	tagsIDs := c.QueryArray("tags") // Assuming the tag IDs are provided as query parameters
-
-	// Associate tags with the created category
-	if len(tagsIDs) > 0 {
-		var tags []Model.Tag
-		if err := db.Find(&tags, tagsIDs).Error; err != nil {
-			c.JSON(400, lib.ErrorResponse("Failed to find tags", err.Error()))
+	// Tags and shiz
+	for i := range input.Tags {
+		tagName := strings.ToLower(input.Tags[i].Name)
+		var existingTag Model.Tag
+		err := db.Where("LOWER(name) = ?", tagName).First(&existingTag).Error
+		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+			newTag := Model.Tag{
+				Name:      tagName,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			if err := db.Create(&newTag).Error; err != nil {
+				c.JSON(400, lib.ErrorResponse("Failed to create tag", err.Error()))
+				return
+			}
+			input.Tags[i] = newTag
+		} else if err != nil {
+			c.JSON(400, lib.ErrorResponse("Failed to check existing tag", err.Error()))
 			return
+		} else {
+			input.Tags[i] = existingTag
 		}
+	}
 
-		// Update the association between category and tags
-		if err := db.Model(&input).Association("Tags").Append(&tags); err != nil {
-			c.JSON(400, lib.ErrorResponse("Failed to associate tags with category", err.Error()))
-			return
-		}
+	if err := db.Create(&input).Error; err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to create usaha", err.Error()))
+		return
 	}
 
 	result := gin.H{
@@ -117,10 +143,9 @@ func CreateCategory(db *gorm.DB, c *gin.Context) {
 
 func UpdateCategory(db *gorm.DB, c *gin.Context) {
 	var input Model.Category
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to update category", err.Error()))
-		return
-	}
+
+	request := c.PostForm("category")
+	json.Unmarshal([]byte(request), &input)
 
 	// Retrieve the existing category from the database
 	var category Model.Category
@@ -131,8 +156,16 @@ func UpdateCategory(db *gorm.DB, c *gin.Context) {
 
 	// Update the category's properties based on the input JSON
 	category.Title = input.Title
-	category.Image = input.Image
 	category.UpdatedAt = time.Now()
+
+	updatedImage, _ := c.FormFile("image")
+	var err error
+	category.Image, err = lib.Compare(updatedImage, category.Image, c.Request.Context())
+
+	if err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to update user", err.Error()))
+		return
+	}
 
 	// Clear the existing tags associated with the category
 	if err := db.Model(&category).Association("Tags").Clear(); err != nil {
@@ -156,19 +189,29 @@ func UpdateCategory(db *gorm.DB, c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, lib.OkResponse("Success update category", nil))
+	result := gin.H{
+		"id":         category.ID,
+		"title":      category.Title,
+		"created_at": category.CreatedAt,
+		"updated_at": category.UpdatedAt,
+		"image":      category.Image,
+		"tags":       category.Tags,
+	}
+
+	c.JSON(200, lib.OkResponse("Success update category", result))
 }
 
 func DeleteCategory(db *gorm.DB, c *gin.Context) {
-	var input Model.Category
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, lib.ErrorResponse("Failed to delete category", err.Error()))
+	var del struct {
+		ID uint `json:"id"`
+	}
+	if err := c.ShouldBindJSON(&del); err != nil {
+		c.JSON(400, lib.ErrorResponse("Failed to bind json", err.Error()))
 		return
 	}
-
 	// Retrieve the existing category from the database
 	var existingCategory Model.Category
-	if err := db.Where("id = ?", input.ID).Preload("Tags").First(&existingCategory).Error; err != nil {
+	if err := db.Where("id = ?", del.ID).Preload("Tags").First(&existingCategory).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to get category", err.Error()))
 		return
 	}
@@ -183,6 +226,21 @@ func DeleteCategory(db *gorm.DB, c *gin.Context) {
 	if err := db.Delete(&existingCategory).Error; err != nil {
 		c.JSON(400, lib.ErrorResponse("Failed to delete category", err.Error()))
 		return
+	}
+	if os.Getenv("DEPLOYMENT_MODE") == "local" {
+		if existingCategory.Image != "" {
+			if err := lib.DeleteImageOffline(existingCategory.Image); err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+				return
+			}
+		}
+	} else {
+		if existingCategory.Image != "" {
+			if err := lib.DeleteImageOnline(existingCategory.Image); err != nil {
+				c.JSON(500, lib.ErrorResponse("Failed to delete image", err.Error()))
+				return
+			}
+		}
 	}
 
 	c.JSON(200, lib.OkResponse("Success delete category", nil))
